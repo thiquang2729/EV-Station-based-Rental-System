@@ -1,0 +1,66 @@
+# =============================
+# 🐳 DOCKER
+# =============================
+
+# Docker volumes & temp files
+*.pid
+*.seed
+*.log
+*.pid.lock
+docker-compose.override.yml
+docker-compose.dev.yml
+docker-compose.debug.yml
+
+# Ignore any Docker build cache folders
+tmp/
+.docker/
+docker-data/
+docker-volume/
+volume-data/
+db_data/
+mysql_data/
+pg_data/
+
+# Ignore environment files (you’ll usually mount these)
+.env
+.env.local
+.env.development
+.env.production
+
+# =============================
+# 💻 EDITOR / OS
+# =============================
+
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
+.history/
+
+# =============================
+# 📦 DEPENDENCIES & BUILD
+# =============================
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+coverage/
+
+# =============================
+# 🔧 OTHERS
+# =============================
+
+# lockfiles (optional, tuỳ chọn nếu nhiều dev khác nhau)
+# package-lock.json
+# yarn.lock
