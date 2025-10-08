@@ -1,0 +1,89 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ev-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: evrental
+      MYSQL_USER: evuser
+      MYSQL_PASSWORD: evpass
+    ports:
+      - "3307:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  adminer:
+    image: adminer
+    container_name: ev-adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+
+  # 🔹 Thay auth-svc bằng admin-svc
+  admin-svc:
+    build: ./services/admin-svc
+    container_name: admin-svc
+    environment:
+      PORT: 3001
+    ports:
+      - "3001:3001"
+
+  rental-svc:
+    build: ./services/rental-svc
+    container_name: rental-svc
+    environment:
+      PORT: 3002
+      DATABASE_URL: mysql://evuser:evpass@mysql:3306/evrental
+      SHADOW_DATABASE_URL: mysql://root:root@mysql:3306/evrental_shadow
+      CORS_ORIGIN: "*"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      admin-svc:
+        condition: service_started
+    ports:
+      - "3002:3002"
+
+  fleet-svc:
+    build: ./services/fleet-svc
+    container_name: fleet-svc
+    environment:
+      PORT: 3003
+      DATABASE_URL: mysql://evuser:evpass@mysql:3306/evrental
+      SHADOW_DATABASE_URL: mysql://root:root@mysql:3306/evrental_shadow
+      S3_REGION: ap-southeast-1
+      S3_BUCKET: evrental-dev-assets
+      S3_PRESIGN_EXPIRES: 300
+    depends_on:
+      mysql:
+        condition: service_healthy
+      admin-svc:
+        condition: service_started
+    ports:
+      - "3003:3003"
+
+  nginx-gateway:
+    image: nginx:latest
+    container_name: nginx-gateway
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      admin-svc:
+        condition: service_started
+      rental-svc:
+        condition: service_started
+      fleet-svc:
+        condition: service_started
+
+volumes:
+  dbdata:
