@@ -1,0 +1,12 @@
+{
+  "name": "auth-svc",
+  "private": true,
+  "scripts": {
+    "start": "node src/server.js",
+    "gen-keys": "node scripts/gen-keys.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
