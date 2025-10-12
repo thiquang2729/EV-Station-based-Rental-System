@@ -239,10 +239,22 @@ const authController = {
 
   logOut: async (req, res) => {
     try {
-      const userId = req.user?.id || req.body?.userId;
+      let userId = req.user?.id || req.body?.userId;
+      const refreshTokenFromCookie = req.cookies?.refreshToken;
+      const refreshTokenFromBody = req.body?.refreshToken;
+      const refreshToken = refreshTokenFromCookie || refreshTokenFromBody;
+
+      if (!userId && refreshToken) {
+        const user = await UserRepository.findByRefreshToken(refreshToken);
+        if (user) {
+          userId = user.id;
+        }
+      }
+
       if (userId) {
         await UserRepository.clearRefreshToken(userId);
       }
+
       res.clearCookie("refreshToken", COOKIE_OPTIONS);
       return sendSuccess(res, {
         message: MESSAGES.LOGOUT_SUCCESS,

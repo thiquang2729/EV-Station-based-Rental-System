@@ -21,3 +21,8 @@ export const logout = async (accessToken) => {
   const response = await apiClient.post("/auth/logout", {}, config);
   return response.data;
 };
+
+export const refreshSession = async () => {
+  const response = await apiClient.post("/auth/refresh", {});
+  return response.data;
+};

@@ -29,8 +29,16 @@ class UserRepository {
     return UserDAO.paginate({ limit, offset });
   }
 
+  static async update(id, data) {
+    return UserDAO.update(id, data);
+  }
+
   static async deleteById(id) {
     return UserDAO.deleteById(id);
+  }
+
+  static async getStats() {
+    return UserDAO.getStats();
   }
 }
 

@@ -1,11 +1,35 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
+import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
+  Box,
+  Button,
+  Flex,
+  FormControl,
+  FormLabel,
+  Heading,
+  Icon,
+  Input,
+  InputGroup,
+  InputRightElement,
+  Stack,
+  Text,
+} from "@chakra-ui/react";
+import { MdOutlineRemoveRedEye } from "react-icons/md";
+import { RiEyeCloseLine } from "react-icons/ri";
+import DefaultAuth from "layouts/auth/Default";
+import { HSeparator } from "components/separator/Separator";
 import { loginUser, resetStatus } from "../features/auth/authSlice";
+import illustration from "assets/img/auth/auth.png";
+import { hasAdminAccess } from "../utils/auth";
 
 const TEXT = {
-  title: "Đăng nhập",
-  subtitle: "Sử dụng tài khoản đã đăng ký để tiếp tục.",
+  title: "Chào mừng trở lại",
+  subtitle: "Nhập thông tin đăng nhập để tiếp tục quản lý trạm sạc.",
   emailRequired: "Vui lòng nhập email.",
   passwordRequired: "Vui lòng nhập mật khẩu.",
   processing: "Đang xử lý...",
@@ -14,18 +38,21 @@ const TEXT = {
   registerNow: "Đăng ký ngay",
   accountLabel: "Tài khoản:",
   verificationLabel: "Trạng thái xác thực:",
+  unauthorized: "Tài khoản của bạn không có quyền truy cập trang quản trị.",
 };
 
 const LoginPage = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { status, error, successMessage, user } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-
   const [formError, setFormError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     dispatch(resetStatus());
@@ -33,6 +60,31 @@ const LoginPage = () => {
       dispatch(resetStatus());
     };
   }, [dispatch]);
+
+  useEffect(() => {
+    if (!user) {
+      setFormError(null);
+      return;
+    }
+
+    if (hasAdminAccess(user)) {
+      const redirectTarget =
+        location.state?.from && location.state.reason !== "unauthorized"
+          ? location.state.from
+          : "/admin/default";
+      navigate(redirectTarget, { replace: true });
+      return;
+    }
+
+    // Redirect non-admin users to home page
+    navigate("/home", { replace: true });
+  }, [user, navigate, location.state]);
+
+  useEffect(() => {
+    if (location.state?.reason === "unauthorized") {
+      setFormError(TEXT.unauthorized);
+    }
+  }, [location.state]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -60,64 +112,139 @@ const LoginPage = () => {
     dispatch(loginUser(formData));
   };
 
+  const renderAlert = () => {
+    const message = formError || error || successMessage;
+    if (!message) {
+      return null;
+    }
+
+    const statusType = formError || error ? "error" : "success";
+
+    return (
+      <Alert status={statusType} borderRadius="16px" variant="left-accent">
+        <AlertIcon />
+        <Box>
+          <AlertTitle fontWeight="600">
+            {statusType === "error" ? "Thông báo lỗi" : "Thành công"}
+          </AlertTitle>
+          <AlertDescription>{message}</AlertDescription>
+        </Box>
+      </Alert>
+    );
+  };
+
   return (
-    <section className="auth-section">
-      <div className="auth-card">
-        <h2>{TEXT.title}</h2>
-        <p className="auth-subtitle">{TEXT.subtitle}</p>
+    <DefaultAuth illustrationBackground={illustration}>
+      <Flex
+        maxW={{ base: "100%", md: "480px" }}
+        w="100%"
+        me="auto"
+        mt={{ base: "40px", md: "12vh" }}
+        px={{ base: "0px", md: "0px" }}
+        direction="column"
+        gap={8}
+      >
+        <Stack spacing={2}>
+          <Heading color="navy.700" fontSize="36px">
+            {TEXT.title}
+          </Heading>
+          <Text color="secondaryGray.600" fontSize="md">
+            {TEXT.subtitle}
+          </Text>
+        </Stack>
 
-        {formError && <div className="auth-alert error">{formError}</div>}
-        {error && <div className="auth-alert error">{error}</div>}
-        {successMessage && <div className="auth-alert success">{successMessage}</div>}
-        {user && (
-          <div className="user-summary">
-            <p>
-              <strong>{TEXT.accountLabel}</strong> {user.fullName || user.email}
-            </p>
-            <p>
-              <strong>Email:</strong> {user.email}
-            </p>
-            <p>
-              <strong>{TEXT.verificationLabel}</strong> {user.verificationStatus}
-            </p>
-          </div>
-        )}
+        <Stack spacing={6} as="form" onSubmit={handleSubmit}>
+          {renderAlert()}
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            placeholder="nhapemail@example.com"
-            value={formData.email}
-            onChange={handleChange}
-            disabled={status === "loading"}
-          />
+          {user && (
+            <Box borderRadius="16px" bg="whiteAlpha.800" p="6" boxShadow="sm">
+              <Text fontWeight="600" color="navy.700" mb="2">
+                {TEXT.accountLabel} {user.fullName || user.email}
+              </Text>
+              <Text color="secondaryGray.600">Email: {user.email}</Text>
+              <Text color="secondaryGray.600">
+                {TEXT.verificationLabel} {user.verificationStatus}
+              </Text>
+            </Box>
+          )}
 
-          <label htmlFor="password">Mật khẩu</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            placeholder="••••••••"
-            value={formData.password}
-            onChange={handleChange}
-            disabled={status === "loading"}
-          />
+          <Stack spacing={5}>
+            <FormControl>
+              <FormLabel fontSize="sm" fontWeight="500" color="navy.700" ms="4px">
+                Email
+              </FormLabel>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                variant="auth"
+                placeholder="nhapemail@example.com"
+                value={formData.email}
+                onChange={handleChange}
+                disabled={status === "loading"}
+                autoComplete="email"
+              />
+            </FormControl>
 
-          <button type="submit" className="auth-submit" disabled={status === "loading"}>
+            <FormControl>
+              <FormLabel fontSize="sm" fontWeight="500" color="navy.700" ms="4px">
+                Mật khẩu
+              </FormLabel>
+              <InputGroup size="md">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  variant="auth"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleChange}
+                  disabled={status === "loading"}
+                  autoComplete="current-password"
+                />
+                <InputRightElement h="full" mt="4px">
+                  <Icon
+                    color="secondaryGray.600"
+                    as={showPassword ? RiEyeCloseLine : MdOutlineRemoveRedEye}
+                    cursor="pointer"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  />
+                </InputRightElement>
+              </InputGroup>
+            </FormControl>
+          </Stack>
+
+          <Button
+            type="submit"
+            variant="brand"
+            size="lg"
+            fontWeight="600"
+            isLoading={status === "loading"}
+          >
             {status === "loading" ? TEXT.processing : TEXT.submit}
-          </button>
-        </form>
+          </Button>
 
-        <p className="auth-footer">
-          {TEXT.noAccount} <Link to="/register">{TEXT.registerNow}</Link>
-        </p>
-      </div>
-    </section>
+          <Flex align="center" gap={4}>
+            <HSeparator />
+            <Text color="secondaryGray.500" fontSize="sm">
+              {TEXT.noAccount}
+            </Text>
+            <HSeparator />
+          </Flex>
+
+          <Button
+            as={RouterLink}
+            to="/register"
+            variant="outline"
+            borderRadius="16px"
+            height="50px"
+            fontWeight="600"
+          >
+            {TEXT.registerNow}
+          </Button>
+        </Stack>
+      </Flex>
+    </DefaultAuth>
   );
 };
 

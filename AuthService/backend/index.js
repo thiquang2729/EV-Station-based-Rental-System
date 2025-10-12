@@ -7,6 +7,8 @@ const pool = require("./config/db");
 const { initializeDatabase } = require("./database/setup");
 const authRoute = require("./routes/auth");
 const userRoute = require("./routes/user");
+const userDocumentRoute = require("./routes/userDocument");
+const uploadRoute = require("./routes/upload");
 dotenv.config();
 
 const rawOrigins = process.env.CLIENT_URL
@@ -34,6 +36,8 @@ app.use(express.json());
 //ROUTES
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/users", userRoute);
+app.use("/api/v1/documents", userDocumentRoute);
+app.use("/api/v1/upload", uploadRoute);
 
 const startServer = async () => {
   try {

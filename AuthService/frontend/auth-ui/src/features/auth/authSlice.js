@@ -1,15 +1,17 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { login as loginService, logout as logoutService, register as registerService } from "../../services/authService";
+import {
+  login as loginService,
+  logout as logoutService,
+  register as registerService,
+  refreshSession as refreshService,
+} from "../../services/authService";
 
 const STORAGE_KEY = "auth_state";
 
 const loadPersistedState = () => {
   try {
     const serialized = localStorage.getItem(STORAGE_KEY);
-    if (!serialized) {
-      return null;
-    }
-    return JSON.parse(serialized);
+    return serialized ? JSON.parse(serialized) : null;
   } catch (error) {
     console.warn("Failed to parse auth state from storage", error);
     return null;
@@ -81,6 +83,16 @@ export const logoutUser = createAsyncThunk("auth/logout", async (_, { getState, 
   }
 });
 
+export const refreshAuthSession = createAsyncThunk("auth/refresh", async (_, { rejectWithValue }) => {
+  try {
+    const response = await refreshService();
+    return response;
+  } catch (error) {
+    const message = error.response?.data?.message || "Phiên đăng nhập đã hết hạn.";
+    return rejectWithValue(message);
+  }
+});
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -134,6 +146,19 @@ const authSlice = createSlice({
       })
       .addCase(logoutUser.rejected, (state, action) => {
         state.error = action.payload || "Không thể đăng xuất.";
+      })
+      .addCase(refreshAuthSession.fulfilled, (state, action) => {
+        state.accessToken = action.payload.data?.accessToken || null;
+        state.refreshToken = action.payload.data?.refreshToken || null;
+        state.error = null;
+        persistState(state);
+      })
+      .addCase(refreshAuthSession.rejected, (state, action) => {
+        state.error = action.payload || "Phiên đăng nhập đã hết hạn.";
+        state.user = null;
+        state.accessToken = null;
+        state.refreshToken = null;
+        clearPersistedState();
       });
   },
 });

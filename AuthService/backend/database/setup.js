@@ -21,8 +21,28 @@ const ensureUsersTable = async () => {
   console.log("Ensured users table exists");
 };
 
+const ensureUserDocumentsTable = async () => {
+  const createTableSql = `
+    CREATE TABLE IF NOT EXISTS user_documents (
+      id VARCHAR(36) NOT NULL PRIMARY KEY,
+      user_id VARCHAR(36) NOT NULL,
+      document_type ENUM('DRIVER_LICENSE', 'NATIONAL_ID') NOT NULL,
+      file_url VARCHAR(512) NOT NULL,
+      status ENUM('PENDING', 'VERIFIED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
+      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      INDEX idx_user_id (user_id),
+      INDEX idx_status (status)
+    )
+  `;
+
+  await pool.execute(createTableSql);
+  console.log("Ensured user_documents table exists");
+};
+
 const initializeDatabase = async () => {
   await ensureUsersTable();
+  await ensureUserDocumentsTable();
 };
 
 module.exports = {

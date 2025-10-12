@@ -1,64 +1,70 @@
-import { useDispatch, useSelector } from "react-redux";
-import { Navigate, Route, Routes, Link } from "react-router-dom";
+import { useState } from "react";
+import { useSelector } from "react-redux";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import { logoutUser } from "./features/auth/authSlice";
-import "./App.css";
+import HomePage from "./pages/HomePage";
+import AdminLayout from "layouts/admin";
+import AuthLayout from "layouts/auth";
+import RTLLayout from "layouts/rtl";
+import initialTheme from "theme/theme";
+import { hasAdminAccess } from "./utils/auth";
 
-const LABELS = {
-  logout: "Đăng xuất",
-  login: "Đăng nhập",
-  register: "Đăng ký",
-  greeting: "Xin chào, ",
-};
-
-function App() {
-  const dispatch = useDispatch();
+const RequireAdmin = ({ children }) => {
+  const location = useLocation();
   const { user } = useSelector((state) => state.auth);
 
-  const handleLogout = () => {
-    dispatch(logoutUser());
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  if (!hasAdminAccess(user)) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname, reason: "unauthorized" }}
+      />
+    );
+  }
+
+  return children;
+};
+
+const App = () => {
+  const { user } = useSelector((state) => state.auth);
+  const [dashboardTheme, setDashboardTheme] = useState(initialTheme);
+  const isAdmin = hasAdminAccess(user);
+
+  const getDefaultRedirect = () => {
+    if (!user) return "/login";
+    return isAdmin ? "/admin/default" : "/home";
   };
 
+  const defaultRedirect = getDefaultRedirect();
+
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <Link to="/" className="brand">
-          XDHDT Auth
-        </Link>
-        <nav className="nav-links">
-          {user ? (
-            <>
-              <span className="welcome-text">
-                {LABELS.greeting}
-                {user.fullName || user.email}
-              </span>
-              <button onClick={handleLogout} className="link-button">
-                {LABELS.logout}
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="link-button">
-                {LABELS.login}
-              </Link>
-              <Link to="/register" className="link-button secondary">
-                {LABELS.register}
-              </Link>
-            </>
-          )}
-        </nav>
-      </header>
-      <main className="app-main">
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </main>
-    </div>
+    <Routes>
+      <Route path="/" element={<Navigate to={defaultRedirect} replace />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/home" element={<HomePage />} />
+      <Route
+        path="/admin/*"
+        element={
+          <RequireAdmin>
+            <AdminLayout theme={dashboardTheme} setTheme={setDashboardTheme} />
+          </RequireAdmin>
+        }
+      />
+      <Route path="/auth/*" element={<AuthLayout />} />
+      <Route
+        path="/rtl/*"
+        element={<RTLLayout theme={dashboardTheme} setTheme={setDashboardTheme} />}
+      />
+      <Route path="*" element={<Navigate to={defaultRedirect} replace />} />
+    </Routes>
   );
-}
+};
 
 export default App;
