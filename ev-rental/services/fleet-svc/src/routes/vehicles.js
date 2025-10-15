@@ -65,28 +65,28 @@ r.put('/:id/status', async (req, res) => {
 
 /**
  * ➕ Thêm xe mới
- * POST /api/v1/vehicles
+ * 3003 POST /api/v1/vehicles
  */
 r.post('/', async (req, res) => {
   try {
-    const { 
-      id, 
-      name, 
+    const {
+      id,
+      name,
       stationId,  // ✅ thêm stationId
-      plate, 
-      type, 
-      status, 
-      isAvailable, 
-      batteryLevel, 
+      plate,
+      type,
+      status,
+      isAvailable,
+      batteryLevel,
       healthStatus,
       pricePerHour // ✅ thêm giá thuê
     } = req.body;
 
     // ⚠️ Kiểm tra thông tin bắt buộc
     if (!id || !stationId || !type || !plate || !pricePerHour) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Thiếu thông tin bắt buộc (id, stationId, type, plate, pricePerHour)' 
+      return res.status(400).json({
+        success: false,
+        message: 'Thiếu thông tin bắt buộc (id, stationId, type, plate, pricePerHour)'
       });
     }
 
@@ -98,7 +98,7 @@ r.post('/', async (req, res) => {
         stationId,
         type,
         plate,
-        
+
         isAvailable: isAvailable ?? true,
         batteryLevel: batteryLevel ?? 100,
         healthStatus: healthStatus || "GOOD",
@@ -113,10 +113,10 @@ r.post('/', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ Lỗi khi thêm xe:', err);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error', 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: err.message
     });
   }
 });

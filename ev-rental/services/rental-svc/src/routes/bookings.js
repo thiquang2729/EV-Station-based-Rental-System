@@ -3,7 +3,9 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const r = express.Router();
 
-// Tạo đặt xe mới
+// ==============================
+// 1️⃣ Tạo đặt xe mới
+// ==============================
 r.post('/', async (req, res) => {
   const { vehicleId, stationId: stationIdInput, startTime, estDurationH } = req.body || {};
   const userId = String((req.body && req.body.userId) || 'dev-user');
@@ -49,7 +51,34 @@ r.post('/', async (req, res) => {
   }
 });
 
-// Trả xe
+// ==============================
+// 2️⃣ Lấy danh sách tất cả đơn đặt xe
+// ==============================
+r.get('/', async (req, res) => {
+  try {
+    const bookings = await prisma.booking.findMany({
+      include: {
+        vehicle: true,
+        station: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    res.json({
+      count: bookings.length,
+      data: bookings,
+    });
+  } catch (err) {
+    console.error('GET BOOKINGS ERROR:', err);
+    res.status(500).json({ error: 'Failed to get bookings' });
+  }
+});
+
+// ==============================
+// 3️⃣ Trả xe
+// ==============================
 r.patch('/:id/return', async (req, res) => {
   const { id } = req.params;
   try {

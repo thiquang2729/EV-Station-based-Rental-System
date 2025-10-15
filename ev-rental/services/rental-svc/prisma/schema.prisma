@@ -43,19 +43,4 @@ model Booking {
   priceEstimate Int?
   priceFinal    Int?
   createdAt     DateTime @default(now())
-
-  handovers     Handover[]
-}
-
-model Handover {
-  id        String   @id @default(cuid())
-  bookingId String
-  booking   Booking  @relation(fields: [bookingId], references: [id])
-  staffId   String
-  type      String   // PICKUP|RETURN
-  checklist Json
-  photos    Json
-  odo       Int
-  notes     String?
-  createdAt DateTime @default(now())
 }
