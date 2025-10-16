@@ -36,10 +36,30 @@ import tableDataDevelopment from "views/admin/dataTables/variables/tableDataDeve
 import tableDataCheck from "views/admin/dataTables/variables/tableDataCheck.json";
 import tableDataColumns from "views/admin/dataTables/variables/tableDataColumns.json";
 import tableDataComplex from "views/admin/dataTables/variables/tableDataComplex.json";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { fetchUsers } from "@/services/userService";
 
 export default function Settings() {
-  // Chakra Color Mode
+  const { accessToken } = useSelector((state) => state.auth);
+  const [riskyUsers, setRiskyUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await fetchUsers({ page: 1, riskStatus: 'BANNED', accessToken });
+        setRiskyUsers(res.data || []);
+      } catch (e) {
+        setRiskyUsers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [accessToken]);
+
   return (
     <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
       <SimpleGrid
@@ -50,7 +70,16 @@ export default function Settings() {
           columnsData={columnsDataDevelopment}
           tableData={tableDataDevelopment}
         />
-        <CheckTable columnsData={columnsDataCheck} tableData={tableDataCheck} />
+        <CheckTable
+          title={"Khách hàng rủi ro (BANNED)"}
+          columnsData={columnsDataCheck}
+          tableData={(riskyUsers || []).map((u) => ({
+            name: [u.fullName || u.email || "N/A", true],
+            progress: (u.riskStatus || '').toUpperCase(),
+            quantity: u.email || '',
+            date: new Date(u.createdAt).toLocaleDateString('vi-VN'),
+          }))}
+        />
         <ColumnsTable
           columnsData={columnsDataColumns}
           tableData={tableDataColumns}

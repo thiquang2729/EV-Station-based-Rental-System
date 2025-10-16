@@ -25,8 +25,8 @@ class UserRepository {
     return UserDAO.clearRefreshToken(userId);
   }
 
-  static async paginate({ limit, offset }) {
-    return UserDAO.paginate({ limit, offset });
+  static async paginate({ limit, offset, riskStatus }) {
+    return UserDAO.paginate({ limit, offset, riskStatus });
   }
 
   static async update(id, data) {

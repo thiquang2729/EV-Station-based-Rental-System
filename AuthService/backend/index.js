@@ -10,6 +10,7 @@ const userRoute = require("./routes/user");
 const userDocumentRoute = require("./routes/userDocument");
 const uploadRoute = require("./routes/upload");
 const complaintRoute = require("./routes/complaint");
+const stationRoute = require("./routes/station");
 dotenv.config();
 
 const rawOrigins = process.env.CLIENT_URL
@@ -40,6 +41,7 @@ app.use("/api/v1/users", userRoute);
 app.use("/api/v1/documents", userDocumentRoute);
 app.use("/api/v1/upload", uploadRoute);
 app.use("/api/v1/complaints", complaintRoute);
+app.use("/api/v1/stations", stationRoute);
 
 const startServer = async () => {
   try {

@@ -1,0 +1,73 @@
+[
+  {
+    "id": "S001",
+    "name": "Trạm A - Nguyễn Văn Cừ",
+    "address": "123 Nguyễn Văn Cừ, Quận 5, TP.HCM",
+    "lat": 10.762622,
+    "lng": 106.660172
+  },
+  {
+    "id": "S002",
+    "name": "Trạm B - Lý Thường Kiệt",
+    "address": "45 Lý Thường Kiệt, Quận 10, TP.HCM",
+    "lat": 10.774156,
+    "lng": 106.662489
+  },
+  {
+    "id": "S003",
+    "name": "Trạm C - Điện Biên Phủ",
+    "address": "250 Điện Biên Phủ, Quận 3, TP.HCM",
+    "lat": 10.78235,
+    "lng": 106.69617
+  },
+  {
+    "id": "S004",
+    "name": "Trạm D - Võ Văn Ngân",
+    "address": "98 Võ Văn Ngân, TP. Thủ Đức, TP.HCM",
+    "lat": 10.848322,
+    "lng": 106.77298
+  },
+  {
+    "id": "S005",
+    "name": "Trạm E - Phạm Văn Đồng",
+    "address": "12 Phạm Văn Đồng, Quận Bình Thạnh, TP.HCM",
+    "lat": 10.818145,
+    "lng": 106.703912
+  },
+  {
+    "id": "S006",
+    "name": "Trạm F - Cộng Hòa",
+    "address": "345 Cộng Hòa, Quận Tân Bình, TP.HCM",
+    "lat": 10.80124,
+    "lng": 106.648672
+  },
+  {
+    "id": "S007",
+    "name": "Trạm G - Nguyễn Thị Minh Khai",
+    "address": "210 Nguyễn Thị Minh Khai, Quận 1, TP.HCM",
+    "lat": 10.770821,
+    "lng": 106.689232
+  },
+  {
+    "id": "S008",
+    "name": "Trạm H - Ung Văn Khiêm",
+    "address": "66 Ung Văn Khiêm, Quận Bình Thạnh, TP.HCM",
+    "lat": 10.806212,
+    "lng": 106.718309
+  },
+  {
+    "id": "S009",
+    "name": "Trạm I - Trường Sa",
+    "address": "1770 Trường Sa, Quận 3, TP.HCM",
+    "lat": 10.786781,
+    "lng": 106.678741
+  },
+  {
+    "id": "S010",
+    "name": "Trạm J - Nguyễn Văn Linh",
+    "address": "32 Nguyễn Văn Linh, Quận 7, TP.HCM",
+    "lat": 10.72938,
+    "lng": 106.7216
+  }
+]
+

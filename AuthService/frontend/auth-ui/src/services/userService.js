@@ -12,10 +12,10 @@ export const getUserStats = async (accessToken) => {
   return response.data?.data ?? response.data;
 };
 
-export const fetchUsers = async ({ page = 1, accessToken } = {}) => {
-  const config = {
-    params: { page },
-  };
+export const fetchUsers = async ({ page = 1, riskStatus, accessToken } = {}) => {
+  const params = { page };
+  if (riskStatus) params.riskStatus = riskStatus;
+  const config = { params };
   if (accessToken) {
     config.headers = {
       Authorization: `Bearer ${accessToken}`,

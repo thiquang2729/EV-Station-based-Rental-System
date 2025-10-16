@@ -115,7 +115,7 @@ class UserDAO {
     await this.updateRefreshToken(userId, null);
   }
 
-  static async paginate({ limit = 10, offset = 0 }) {
+  static async paginate({ limit = 10, offset = 0, riskStatus }) {
     const parsedLimit = Number(limit);
     const parsedOffset = Number(offset);
 
@@ -124,6 +124,10 @@ class UserDAO {
 
     // Use query() instead of execute() for LIMIT/OFFSET as some MySQL versions
     // don't support prepared statement parameters for these clauses
+    const whereClause = riskStatus
+      ? `WHERE UPPER(risk_status) = UPPER(${pool.escape(riskStatus)})`
+      : ``;
+
     const listSql = `
       SELECT
         id,
@@ -134,10 +138,11 @@ class UserDAO {
         risk_status AS riskStatus,
         created_at AS createdAt
       FROM users
+      ${whereClause}
       ORDER BY created_at DESC
       LIMIT ${safeLimit} OFFSET ${safeOffset}
     `;
-    const countSql = `SELECT COUNT(*) AS total FROM users`;
+    const countSql = `SELECT COUNT(*) AS total FROM users ${whereClause}`;
 
     const [userResult, countResult] = await Promise.all([
       pool.query(listSql),

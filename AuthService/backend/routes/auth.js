@@ -1,4 +1,5 @@
 const authController = require("../controllers/authController");
+const { verifyToken } = require("../controllers/verifyToken");
 
 const router = require("express").Router();
 
@@ -11,5 +12,13 @@ router.post("/refresh", authController.requestRefreshToken);
 router.post("/login", authController.loginUser);
 //LOG OUT
 router.post("/logout", authController.logOut);
+
+// INTROSPECT (for API Gateway auth_request)
+router.get("/introspect", verifyToken, (req, res) => {
+  return res.json({
+    active: true,
+    user: { id: req.user.id, role: req.user.role },
+  });
+});
 
 module.exports = router;

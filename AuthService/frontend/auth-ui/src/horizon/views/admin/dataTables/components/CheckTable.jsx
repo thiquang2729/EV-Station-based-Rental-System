@@ -31,7 +31,7 @@ const columnHelper = createColumnHelper();
 
 // const columns = columnsDataCheck;
 export default function CheckTable(props) {
-  const { tableData } = props;
+  const { tableData, title } = props;
   const [sorting, setSorting] = React.useState([]);
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
@@ -144,7 +144,7 @@ export default function CheckTable(props) {
           fontWeight="700"
           lineHeight="100%"
         >
-          Check Table
+          {title || 'Check Table'}
         </Text>
         <Menu />
       </Flex>

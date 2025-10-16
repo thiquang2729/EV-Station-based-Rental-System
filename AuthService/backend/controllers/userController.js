@@ -10,10 +10,11 @@ const userController = {
   async getAllUsers(req, res) {
     try {
       const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+      const riskStatus = (req.query.riskStatus || "").trim() || null;
       const limit = DEFAULT_PAGE_SIZE;
       const offset = (page - 1) * limit;
 
-      const { users, totalItems } = await UserRepository.paginate({ limit, offset });
+      const { users, totalItems } = await UserRepository.paginate({ limit, offset, riskStatus });
       const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / limit);
 
       return sendSuccess(res, {

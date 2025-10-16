@@ -34,6 +34,7 @@ import {
   Divider,
   FormControl,
   FormLabel,
+  Select,
   Input,
   Textarea,
 } from "@chakra-ui/react";
@@ -59,6 +60,9 @@ import { fetchUserStats } from "@/features/users/userStatsSlice";
 import { hasAdminAccess, isAdminOnly } from "@/utils/auth";
 import { getUserById } from "@/services/userService";
 import { getDocumentsByUserId } from "@/services/documentService";
+import { fetchStations as fetchExternalStations } from "@/services/external/stationService";
+import UserCard from "./UserCard";
+import UserDetailsModal from "./UserDetailsModal";
 
 export default function UserListTable() {
   const dispatch = useDispatch();
@@ -83,6 +87,8 @@ export default function UserListTable() {
     note: "",
   });
   const [verifying, setVerifying] = useState(false);
+  const [stations, setStations] = useState([]);
+  const [loadingStations, setLoadingStations] = useState(false);
 
   const textColor = useColorModeValue("secondaryGray.900", "white");
   const textColorSecondary = useColorModeValue("secondaryGray.600", "white");
@@ -233,13 +239,29 @@ export default function UserListTable() {
     setSelectedUser(user);
     setVerifyFormData({ stationId: "", note: "" });
     onVerifyOpen();
+    setLoadingStations(true);
+    try {
+      const data = await fetchExternalStations();
+      setStations(Array.isArray(data) ? data : []);
+    } catch (e) {
+      toast({
+        status: "error",
+        title: "Lỗi",
+        description: "Không thể tải danh sách trạm",
+        duration: 3000,
+        isClosable: true,
+      });
+      setStations([]);
+    } finally {
+      setLoadingStations(false);
+    }
   };
 
   const handleVerifySubmit = async () => {
     if (!verifyFormData.stationId.trim()) {
       toast({
         status: "warning",
-        title: "Vui lòng nhập ID trạm",
+        title: "Vui lòng chọn trạm",
         duration: 3000,
         isClosable: true,
       });
@@ -316,6 +338,17 @@ export default function UserListTable() {
     return <Badge colorScheme={config.colorScheme}>{config.label}</Badge>;
   };
 
+  const getRiskBadge = (status) => {
+    const statusConfig = {
+      NONE: { label: "Không", colorScheme: "green" },
+      WARNED: { label: "Cảnh báo", colorScheme: "yellow" },
+      BANNED: { label: "Cấm", colorScheme: "red" },
+    };
+
+    const config = statusConfig[status] || statusConfig.NONE;
+    return <Badge colorScheme={config.colorScheme}>{config.label}</Badge>;
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -364,120 +397,18 @@ export default function UserListTable() {
         {users && users.length > 0 ? (
           <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} gap="20px">
             {users.map((user) => (
-              <Card
+              <UserCard
                 key={user.id}
-                bg={cardBg}
-                border="1px solid"
-                borderColor={borderColor}
-                p="20px"
-                borderRadius="15px"
-                transition="all 0.2s"
-                _hover={{
-                  bg: hoverBg,
-                  transform: "translateY(-2px)",
-                  boxShadow: "lg",
-                }}
-              >
-                <Flex direction="column" gap="15px">
-                  {/* Header với ID và trạng thái */}
-                  <Flex justify="space-between" align="center">
-                    <Flex align="center" gap="8px">
-                      <Icon as={MdPerson} w="20px" h="20px" color={brandColor} />
-                      <Text color={textColorSecondary} fontSize="sm" fontWeight="500">
-                        ID: {user.id}
-                      </Text>
-                    </Flex>
-                    {getVerificationBadge(user.verificationStatus)}
-                  </Flex>
-
-                  {/* Thông tin user */}
-                  <Box>
-                    <Text color={textColor} fontSize="lg" fontWeight="700" mb="5px">
-                      {user.fullName || "N/A"}
-                    </Text>
-                    <Flex align="center" gap="5px">
-                      <Icon as={MdEmail} w="16px" h="16px" color={textColorSecondary} />
-                      <Text color={textColorSecondary} fontSize="sm">
-                        {user.email}
-                      </Text>
-                    </Flex>
-                  </Box>
-
-                  {/* Thông tin bổ sung */}
-                  <Flex direction="column" gap="5px" pt="10px" borderTop="1px solid" borderColor={borderColor}>
-                    <Flex justify="space-between">
-                      <Text color={textColorSecondary} fontSize="xs">
-                        Số điện thoại:
-                      </Text>
-                      <Text color={textColor} fontSize="xs" fontWeight="600">
-                        {user.phoneNumber || "N/A"}
-                      </Text>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text color={textColorSecondary} fontSize="xs">
-                        Ngày tạo:
-                      </Text>
-                      <Text color={textColor} fontSize="xs" fontWeight="600">
-                        {formatDate(user.createdAt)}
-                      </Text>
-                    </Flex>
-                  </Flex>
-
-                  {/* Action buttons */}
-                  <Flex gap="8px" pt="10px" wrap="wrap">
-                    <Button
-                      size="sm"
-                      leftIcon={<Icon as={MdVisibility} w="16px" h="16px" />}
-                      colorScheme="teal"
-                      variant="outline"
-                      onClick={() => handleViewUser(user)}
-                      flex="1"
-                      minW="80px"
-                    >
-                      Xem
-                    </Button>
-                    <Button
-                      size="sm"
-                      leftIcon={<Icon as={MdCheckCircle} w="16px" h="16px" />}
-                      colorScheme="green"
-                      variant="outline"
-                      onClick={() => isAdminStrict ? handleAdminVerify(user) : handleVerifyOnsite(user)}
-                      isDisabled={user.verificationStatus === "VERIFIED"}
-                      flex="1"
-                      minW="80px"
-                    >
-                      {isAdminStrict ? "Xác thực" : "Xác thực tại điểm"}
-                    </Button>
-                    {isAdminStrict && (
-                      <>
-                        <Button
-                          size="sm"
-                          leftIcon={<Icon as={MdEdit} w="16px" h="16px" />}
-                          colorScheme="blue"
-                          variant="outline"
-                          onClick={() => handleEditClick(user.id)}
-                          flex="1"
-                          minW="80px"
-                        >
-                          Sửa
-                        </Button>
-                        <Button
-                          size="sm"
-                          leftIcon={<Icon as={MdDelete} w="16px" h="16px" />}
-                          colorScheme="red"
-                          variant="outline"
-                          onClick={() => handleDeleteClick(user.id)}
-                          isLoading={deleteStatus === "loading" && deleteUserId === user.id}
-                          flex="1"
-                          minW="80px"
-                        >
-                          Xóa
-                        </Button>
-                      </>
-                    )}
-                  </Flex>
-                </Flex>
-              </Card>
+                user={user}
+                onView={handleViewUser}
+                onEdit={handleEditClick}
+                onVerify={(u) => (isAdminStrict ? handleAdminVerify(u) : handleVerifyOnsite(u))}
+                isAdminStrict={isAdminStrict}
+                deleteStatus={deleteStatus}
+                deleteUserId={deleteUserId}
+                ui={{ textColor, textColorSecondary, cardBg, borderColor, hoverBg, brandColor }}
+                helpers={{ getVerificationBadge, formatDate }}
+              />
             ))}
           </SimpleGrid>
         ) : (
@@ -591,176 +522,16 @@ export default function UserListTable() {
         </AlertDialogOverlay>
       </AlertDialog>
 
-      {/* View User Info Modal */}
-      <Modal isOpen={isViewOpen} onClose={onViewClose} size="4xl" scrollBehavior="inside">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Thông tin người dùng</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            {loadingUserDetails ? (
-              <Flex justify="center" align="center" minH="200px">
-                <Spinner size="xl" color={brandColor} thickness="4px" />
-              </Flex>
-            ) : userDetails ? (
-              <VStack spacing="20px" align="stretch">
-                {/* User Basic Info */}
-                <Box p="20px" bg={useColorModeValue("gray.50", "navy.700")} borderRadius="12px">
-                  <Text fontSize="lg" fontWeight="700" color={textColor} mb="15px">
-                    Thông tin cơ bản
-                  </Text>
-                  <SimpleGrid columns={{ base: 1, md: 2 }} gap="15px">
-                    <Box>
-                      <Text fontSize="sm" color={textColorSecondary} mb="5px">
-                        Họ và tên
-                      </Text>
-                      <Text fontWeight="600" color={textColor}>
-                        {userDetails.fullName || "N/A"}
-                      </Text>
-                    </Box>
-                    <Box>
-                      <Text fontSize="sm" color={textColorSecondary} mb="5px">
-                        Email
-                      </Text>
-                      <Text fontWeight="600" color={textColor}>
-                        {userDetails.email}
-                      </Text>
-                    </Box>
-                    <Box>
-                      <Text fontSize="sm" color={textColorSecondary} mb="5px">
-                        Số điện thoại
-                      </Text>
-                      <Text fontWeight="600" color={textColor}>
-                        {userDetails.phoneNumber || "N/A"}
-                      </Text>
-                    </Box>
-                    <Box>
-                      <Text fontSize="sm" color={textColorSecondary} mb="5px">
-                        Vai trò
-                      </Text>
-                      <Badge colorScheme="blue">{userDetails.role || "RENTER"}</Badge>
-                    </Box>
-                    <Box>
-                      <Text fontSize="sm" color={textColorSecondary} mb="5px">
-                        Trạng thái xác thực
-                      </Text>
-                      {getVerificationBadge(userDetails.verificationStatus)}
-                    </Box>
-                    <Box>
-                      <Text fontSize="sm" color={textColorSecondary} mb="5px">
-                        Ngày đăng ký
-                      </Text>
-                      <Text fontWeight="600" color={textColor}>
-                        {formatDate(userDetails.createdAt)}
-                      </Text>
-                    </Box>
-                  </SimpleGrid>
-                </Box>
-
-                {/* Documents */}
-                <Box>
-                  <Text fontSize="lg" fontWeight="700" color={textColor} mb="15px">
-                    Giấy tờ đã upload
-                  </Text>
-                  {userDocuments.length > 0 ? (
-                    <SimpleGrid columns={{ base: 1, md: 2 }} gap="15px">
-                      {userDocuments.map((doc) => (
-                        <Card key={doc.id} p="15px" border="1px solid" borderColor={borderColor}>
-                          <VStack align="stretch" spacing="10px">
-                            <Flex justify="space-between" align="center">
-                              <Text fontWeight="600" color={textColor}>
-                                {doc.documentType === "DRIVER_LICENSE" ? "Bằng lái xe" : "CCCD"}
-                              </Text>
-                              {getVerificationBadge(doc.status)}
-                            </Flex>
-                            {doc.fileUrl && (
-                              <Box>
-                                <Image
-                                  src={doc.fileUrl}
-                                  alt="Document"
-                                  maxH="200px"
-                                  objectFit="contain"
-                                  borderRadius="8px"
-                                />
-                              </Box>
-                            )}
-                            <Text fontSize="sm" color={textColorSecondary}>
-                              Upload: {formatDate(doc.uploadedAt)}
-                            </Text>
-                          </VStack>
-                        </Card>
-                      ))}
-                    </SimpleGrid>
-                  ) : (
-                    <Text color={textColorSecondary}>Chưa có giấy tờ nào</Text>
-                  )}
-                </Box>
-
-                {/* Verification Logs */}
-                <Box>
-                  <Text fontSize="lg" fontWeight="700" color={textColor} mb="15px">
-                    Lịch sử xác thực tại điểm
-                  </Text>
-                  {verificationLogs.length > 0 ? (
-                    <VStack spacing="10px" align="stretch">
-                      {verificationLogs.map((log) => (
-                        <Card key={log.id} p="15px" border="1px solid" borderColor={borderColor}>
-                          <VStack align="stretch" spacing="8px">
-                            <Flex justify="space-between" align="center">
-                              <HStack>
-                                <Icon as={MdLocationOn} color={brandColor} />
-                                <Text fontWeight="600" color={textColor}>
-                                  Trạm: {log.stationName || log.stationId || "N/A"}
-                                </Text>
-                              </HStack>
-                              <Text fontSize="sm" color={textColorSecondary}>
-                                {formatDate(log.createdAt)}
-                              </Text>
-                            </Flex>
-                            {log.staffName && (
-                              <HStack>
-                                <Icon as={MdPerson} color={brandColor} />
-                                <Text fontSize="sm" color={textColor}>
-                                  Xác thực bởi: {log.staffName}
-                                </Text>
-                                
-                              </HStack>
-                            )}
-                            {log.staffId && (
-                              <HStack>
-                                <Icon as={MdPerson} color={brandColor} />
-                                <Text fontSize="sm" color={textColor}>
-                                  Id: {log.staffId}
-                                </Text>
-                                
-                              </HStack>
-                            )}
-                            {log.note && (
-                              <HStack align="start">
-                                <Icon as={MdNote} color={brandColor} mt="2px" />
-                                <Text fontSize="sm" color={textColor}>
-                                  {log.note}
-                                </Text>
-                              </HStack>
-                            )}
-                          </VStack>
-                        </Card>
-                      ))}
-                    </VStack>
-                  ) : (
-                    <Text color={textColorSecondary}>Chưa có lịch sử xác thực nào</Text>
-                  )}
-                </Box>
-              </VStack>
-            ) : (
-              <Text color={textColorSecondary}>Không thể tải thông tin người dùng</Text>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={onViewClose}>Đóng</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <UserDetailsModal
+        isOpen={isViewOpen}
+        onClose={onViewClose}
+        loading={loadingUserDetails}
+        userDetails={userDetails}
+        userDocuments={userDocuments}
+        verificationLogs={verificationLogs}
+        ui={{ textColor, textColorSecondary, borderColor, brandColor }}
+        helpers={{ getVerificationBadge, getRiskBadge, formatDate }}
+      />
 
       {/* Verify Onsite Modal */}
       <Modal isOpen={isVerifyOpen} onClose={onVerifyClose} size="md">
@@ -780,12 +551,19 @@ export default function UserListTable() {
               </Box>
 
               <FormControl isRequired>
-                <FormLabel>ID Trạm</FormLabel>
-                <Input
-                  placeholder="Nhập ID trạm (VD: STATION_001)"
+                <FormLabel>Trạm</FormLabel>
+                <Select
+                  placeholder={loadingStations ? "Đang tải danh sách trạm..." : "Chọn trạm"}
+                  isDisabled={loadingStations}
                   value={verifyFormData.stationId}
                   onChange={(e) => setVerifyFormData({ ...verifyFormData, stationId: e.target.value })}
-                />
+                >
+                  {stations.map((st) => (
+                    <option key={st.id} value={st.id}>
+                      {st.name} — {st.address}
+                    </option>
+                  ))}
+                </Select>
               </FormControl>
 
               <FormControl>

@@ -18,6 +18,8 @@ import DocumentManagement from 'views/admin/documents';
 import ComplaintManagement from 'views/admin/complaints';
 import Profile from 'views/admin/profile';
 import DataTables from 'views/admin/dataTables';
+import RiskyUsersPage from 'views/admin/riskyUsers';
+import { MdReportProblem } from 'react-icons/md';
 import RTL from 'views/admin/rtl';
 
 // Auth Imports
@@ -81,6 +83,13 @@ const routes = [
     icon: <Icon as={MdBarChart} width="20px" height="20px" color="inherit" />,
     path: '/data-tables',
     component: <DataTables />,
+  },
+  {
+    name: 'Khách hàng rủi ro',
+    layout: '/admin',
+    icon: <Icon as={MdWarning} width="20px" height="20px" color="inherit" />,
+    path: '/risky-users',
+    component: <RiskyUsersPage />,
   },
   {
     name: 'Profile',
