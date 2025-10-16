@@ -1,6 +1,7 @@
 /* eslint-disable */
 import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
 // chakra imports
 import { Box, Flex, HStack, Text, useColorModeValue } from "@chakra-ui/react";
 
@@ -17,6 +18,7 @@ export function SidebarLinks(props) {
   let brandColor = useColorModeValue("brand.500", "brand.400");
 
   const { routes } = props;
+  const { user } = useSelector((state) => state.auth);
 
   // verifies if routeName is the one active (in browser input)
   const activeRoute = (routeName) => {
@@ -26,6 +28,10 @@ export function SidebarLinks(props) {
   // this function creates the links from the secondary accordions (for example auth -> sign-in -> default)
   const createLinks = (routes) => {
     return routes.map((route, index) => {
+      // Filter out adminOnly routes for STAFF users
+      if (route.adminOnly && user?.role === "STAFF") {
+        return null;
+      }
       if (route.category) {
         return (
           <>

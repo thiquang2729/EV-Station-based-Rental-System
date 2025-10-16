@@ -9,6 +9,7 @@ const authRoute = require("./routes/auth");
 const userRoute = require("./routes/user");
 const userDocumentRoute = require("./routes/userDocument");
 const uploadRoute = require("./routes/upload");
+const complaintRoute = require("./routes/complaint");
 dotenv.config();
 
 const rawOrigins = process.env.CLIENT_URL
@@ -38,6 +39,7 @@ app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/users", userRoute);
 app.use("/api/v1/documents", userDocumentRoute);
 app.use("/api/v1/upload", uploadRoute);
+app.use("/api/v1/complaints", complaintRoute);
 
 const startServer = async () => {
   try {

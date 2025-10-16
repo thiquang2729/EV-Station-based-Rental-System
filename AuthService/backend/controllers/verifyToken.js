@@ -12,6 +12,12 @@ const extractTokenFromHeader = (req) => {
 
 const verifyToken = (req, res, next) => {
   const token = extractTokenFromHeader(req);
+  
+  // console.log("=== TOKEN DEBUG ===");
+  // console.log("Headers:", req.headers);
+  // console.log("Authorization header:", req.headers.authorization);
+  // console.log("Token header:", req.headers.token);
+  // console.log("Extracted token:", token);
 
   if (!token) {
     return sendError(res, {
@@ -58,8 +64,21 @@ const verifyTokenAndAdmin = (req, res, next) =>
     });
   });
 
+const verifyTokenAndStaff = (req, res, next) =>
+  verifyToken(req, res, () => {
+    if (req.user.role === "ADMIN" || req.user.role === "STAFF") {
+      return next();
+    }
+    return sendError(res, {
+      status: 403,
+      message: "Bạn không có quyền truy cập.",
+      code: "FORBIDDEN",
+    });
+  });
+
 module.exports = {
   verifyToken,
   verifyTokenAndUserAuthorization,
   verifyTokenAndAdmin,
+  verifyTokenAndStaff,
 };

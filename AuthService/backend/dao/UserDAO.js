@@ -231,6 +231,17 @@ class UserDAO {
       statusBreakdown,
     };
   }
+
+  static async updateVerificationStatus(userId, verificationStatus) {
+    const sql = `
+      UPDATE users 
+      SET verification_status = ?, updated_at = NOW()
+      WHERE id = ?
+    `;
+    
+    const [result] = await pool.execute(sql, [verificationStatus, userId]);
+    return result.affectedRows > 0;
+  }
 }
 
 module.exports = UserDAO;

@@ -40,6 +40,10 @@ class UserRepository {
   static async getStats() {
     return UserDAO.getStats();
   }
+
+  static async updateVerificationStatus(userId, verificationStatus) {
+    return UserDAO.updateVerificationStatus(userId, verificationStatus);
+  }
 }
 
 module.exports = UserRepository;

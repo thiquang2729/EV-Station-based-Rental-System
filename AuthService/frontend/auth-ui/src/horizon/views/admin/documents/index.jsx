@@ -24,11 +24,13 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { MdCheckCircle, MdCancel, MdPending, MdImage, MdPerson } from "react-icons/md";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { getPendingDocuments, updateDocumentStatus } from "@/services/documentService";
 import { hasAdminAccess } from "@/utils/auth";
+import { fetchUserStats } from "@/features/users/userStatsSlice";
 
 export default function DocumentManagement() {
+  const dispatch = useDispatch();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   
@@ -94,8 +96,9 @@ export default function DocumentManagement() {
         position: "bottom-right",
       });
 
-      // Reload documents
+      // Reload documents and refresh user stats
       loadDocuments();
+      dispatch(fetchUserStats());
       onClose();
     } catch (error) {
       toast({

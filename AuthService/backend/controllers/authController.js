@@ -117,7 +117,7 @@ const authController = {
         role: user.role,
       },
       process.env.JWT_ACCESS_KEY,
-      { expiresIn: "30s" }
+      { expiresIn: "1h" }
     ),
 
   generateRefreshToken: (user) =>

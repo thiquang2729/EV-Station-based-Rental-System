@@ -8,12 +8,14 @@ import {
   MdLock,
   MdEdit,
   MdDescription,
+  MdWarning,
 } from 'react-icons/md';
 
 // Admin Imports
 import MainDashboard from 'views/admin/default';
 import EditUser from 'views/admin/marketplace';
 import DocumentManagement from 'views/admin/documents';
+import ComplaintManagement from 'views/admin/complaints';
 import Profile from 'views/admin/profile';
 import DataTables from 'views/admin/dataTables';
 import RTL from 'views/admin/rtl';
@@ -42,6 +44,21 @@ const routes = [
       />
     ),
     component: <DocumentManagement />,
+    adminOnly: true,
+  },
+  {
+    name: 'Quản lý khiếu nại',
+    layout: '/admin',
+    path: '/complaints',
+    icon: (
+      <Icon
+        as={MdWarning}
+        width="20px"
+        height="20px"
+        color="inherit"
+      />
+    ),
+    component: <ComplaintManagement />,
   },
   {
     name: 'Chỉnh sửa người dùng',

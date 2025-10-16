@@ -29,20 +29,23 @@ import {
   FormLabel,
   Select,
   Input,
+  Textarea,
   Image,
   SimpleGrid,
   Spinner,
 } from "@chakra-ui/react";
-import { MdLogout, MdUploadFile, MdPerson, MdVerifiedUser, MdSecurity, MdImage, MdCheckCircle, MdCancel, MdPending } from "react-icons/md";
+import { MdLogout, MdUploadFile, MdPerson, MdVerifiedUser, MdSecurity, MdImage, MdCheckCircle, MdCancel, MdPending, MdWarning, MdAdd } from "react-icons/md";
 import { logoutUser } from "../features/auth/authSlice";
 import { hasAdminAccess } from "../utils/auth";
 import { uploadDocument, getDocumentsByUserId } from "../services/documentService";
+import { getComplaintsByRenterId, createComplaint } from "../services/complaintService";
 
 const HomePage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const toast = useToast();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const uploadModal = useDisclosure();
+  const complaintModal = useDisclosure();
   const fileInputRef = useRef(null);
   
   const { user, accessToken } = useSelector((state) => state.auth);
@@ -53,6 +56,12 @@ const HomePage = () => {
   const [uploading, setUploading] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
+
+  // Complaint state
+  const [complaints, setComplaints] = useState([]);
+  const [loadingComplaints, setLoadingComplaints] = useState(false);
+  const [complaintDetails, setComplaintDetails] = useState("");
+  const [creatingComplaint, setCreatingComplaint] = useState(false);
 
   const bgColor = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
@@ -75,8 +84,9 @@ const HomePage = () => {
       return;
     }
 
-    // Load documents
+    // Load documents and complaints
     loadDocuments();
+    loadComplaints();
   }, [user, navigate]);
 
   const loadDocuments = async () => {
@@ -96,13 +106,74 @@ const HomePage = () => {
     }
   };
 
+  const loadComplaints = async () => {
+    if (!user || !accessToken) return;
+    
+    try {
+      setLoadingComplaints(true);
+      const response = await getComplaintsByRenterId({
+        renterId: user.id,
+        accessToken,
+      });
+      setComplaints(response.data || []);
+    } catch (error) {
+      console.error("Load complaints error:", error);
+    } finally {
+      setLoadingComplaints(false);
+    }
+  };
+
   const handleLogout = () => {
     dispatch(logoutUser());
     navigate("/login", { replace: true });
   };
 
   const handleUploadDocuments = () => {
-    onOpen();
+    uploadModal.onOpen();
+  };
+
+  const handleCreateComplaint = async (event) => {
+    event.preventDefault();
+    if (!complaintDetails.trim()) {
+      toast({
+        status: "warning",
+        title: "Vui lòng nhập chi tiết khiếu nại",
+      });
+      return;
+    }
+
+    console.log("Creating complaint with:", { 
+      renterId: user.id, 
+      details: complaintDetails.trim(), 
+      accessToken: accessToken ? "EXISTS" : "NULL" 
+    });
+
+    try {
+      setCreatingComplaint(true);
+      await createComplaint({
+        renterId: user.id,
+        details: complaintDetails.trim(),
+        accessToken,
+      });
+
+      toast({
+        status: "success",
+        title: "Gửi khiếu nại thành công",
+        description: "Khiếu nại của bạn đã được gửi đến bộ phận hỗ trợ.",
+      });
+
+      complaintModal.onClose();
+      setComplaintDetails("");
+      loadComplaints();
+    } catch (error) {
+      toast({
+        status: "error",
+        title: "Lỗi",
+        description: error.response?.data?.message || "Không thể gửi khiếu nại",
+      });
+    } finally {
+      setCreatingComplaint(false);
+    }
   };
 
   const handleFileSelect = (event) => {
@@ -206,7 +277,22 @@ const HomePage = () => {
     setSelectedFile(null);
     setPreviewUrl(null);
     setDocumentType("DRIVER_LICENSE");
-    onClose();
+    uploadModal.onClose();
+  };
+
+  const getComplaintStatusBadge = (status) => {
+    const statusConfig = {
+      OPEN: { label: "Đang mở", colorScheme: "orange" },
+      RESOLVED: { label: "Đã giải quyết", colorScheme: "green" },
+      CLOSED: { label: "Đã đóng", colorScheme: "gray" },
+    };
+
+    const config = statusConfig[status] || statusConfig.OPEN;
+    return (
+      <Badge colorScheme={config.colorScheme} fontSize="sm">
+        {config.label}
+      </Badge>
+    );
   };
 
   const getVerificationBadge = (status) => {
@@ -454,6 +540,20 @@ const HomePage = () => {
                   Upload giấy tờ tùy thân
                 </Button>
 
+                {/* Create Complaint Button */}
+                <Button
+                  leftIcon={<Icon as={MdWarning} w="20px" h="20px" />}
+                  colorScheme="orange"
+                  size="lg"
+                  width="100%"
+                  height="60px"
+                  onClick={complaintModal.onOpen}
+                  fontSize="md"
+                  fontWeight="600"
+                >
+                  Gửi khiếu nại
+                </Button>
+
                 {/* Logout Button */}
                 <Button
                   leftIcon={<Icon as={MdLogout} w="20px" h="20px" />}
@@ -560,11 +660,77 @@ const HomePage = () => {
               )}
             </VStack>
           </Card>
+
+          {/* Complaints List Card */}
+          <Card bg={cardBg} p="30px" borderRadius="20px" boxShadow="lg">
+            <VStack spacing="20px" align="stretch">
+              <Flex justify="space-between" align="center">
+                <Heading size="md" color={textColor}>
+                  Khiếu nại của bạn
+                </Heading>
+                <Button
+                  size="sm"
+                  colorScheme="orange"
+                  leftIcon={<Icon as={MdAdd} />}
+                  onClick={complaintModal.onOpen}
+                >
+                  Gửi khiếu nại
+                </Button>
+              </Flex>
+
+              {loadingComplaints ? (
+                <Flex justify="center" py="40px">
+                  <Spinner size="lg" color={brandColor} />
+                </Flex>
+              ) : complaints.length > 0 ? (
+                <VStack spacing="15px" align="stretch">
+                  {complaints.map((complaint) => (
+                    <Card
+                      key={complaint.id}
+                      bg={docCardBg}
+                      p="20px"
+                      borderRadius="15px"
+                    >
+                      <VStack align="stretch" spacing="10px">
+                        <Flex justify="space-between" align="center">
+                          {getComplaintStatusBadge(complaint.status)}
+                          <Text color={textSecondary} fontSize="xs">
+                            {new Date(complaint.createdAt).toLocaleString("vi-VN")}
+                          </Text>
+                        </Flex>
+                        <Text color={textColor} fontSize="sm" whiteSpace="pre-wrap">
+                          {complaint.details}
+                        </Text>
+                        {complaint.reporterName && (
+                          <Text color={textSecondary} fontSize="xs">
+                            Báo cáo bởi: {complaint.reporterName}
+                          </Text>
+                        )}
+                      </VStack>
+                    </Card>
+                  ))}
+                </VStack>
+              ) : (
+                <Flex
+                  direction="column"
+                  align="center"
+                  justify="center"
+                  py="40px"
+                  gap="10px"
+                >
+                  <Icon as={MdWarning} w="60px" h="60px" color={textSecondary} />
+                  <Text color={textSecondary} fontSize="md">
+                    Chưa có khiếu nại nào
+                  </Text>
+                </Flex>
+              )}
+            </VStack>
+          </Card>
         </VStack>
       </Container>
 
       {/* Upload Modal */}
-      <Modal isOpen={isOpen} onClose={handleModalClose} size="lg" isCentered>
+      <Modal isOpen={uploadModal.isOpen} onClose={handleModalClose} size="lg" isCentered>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Upload giấy tờ tùy thân</ModalHeader>
@@ -633,6 +799,54 @@ const HomePage = () => {
               loadingText="Đang tải lên..."
             >
               Tải lên
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Create Complaint Modal */}
+      <Modal isOpen={complaintModal.isOpen} onClose={complaintModal.onClose} size="lg" isCentered>
+        <ModalOverlay />
+        <ModalContent as="form" onSubmit={handleCreateComplaint}>
+          <ModalHeader>Gửi khiếu nại</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <VStack spacing="20px" align="stretch">
+              <Box p="15px" bg={useColorModeValue("orange.50", "orange.900")} borderRadius="8px">
+                <HStack spacing="10px">
+                  <Icon as={MdWarning} color="orange.500" w="20px" h="20px" />
+                  <Text fontSize="sm" color={textColor}>
+                    Khiếu nại của bạn sẽ được gửi đến bộ phận hỗ trợ và được xử lý sớm nhất có thể.
+                  </Text>
+                </HStack>
+              </Box>
+
+              <FormControl isRequired>
+                <FormLabel>Chi tiết khiếu nại</FormLabel>
+                <Textarea
+                  placeholder="Mô tả chi tiết về vấn đề, sự cố hoặc khiếu nại của bạn..."
+                  value={complaintDetails}
+                  onChange={(e) => setComplaintDetails(e.target.value)}
+                  rows={8}
+                />
+                <Text fontSize="xs" color={textSecondary} mt="5px">
+                  Hãy cung cấp thông tin chi tiết để chúng tôi có thể hỗ trợ bạn tốt hơn.
+                </Text>
+              </FormControl>
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={complaintModal.onClose}>
+              Hủy
+            </Button>
+            <Button
+              colorScheme="orange"
+              type="submit"
+              isLoading={creatingComplaint}
+              loadingText="Đang gửi..."
+            >
+              Gửi khiếu nại
             </Button>
           </ModalFooter>
         </ModalContent>

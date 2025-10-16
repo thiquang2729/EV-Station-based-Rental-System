@@ -1,5 +1,6 @@
 const { randomUUID } = require("crypto");
 const UserDocumentRepository = require("../repositories/UserDocumentRepository");
+const UserRepository = require("../repositories/UserRepository");
 const { sendSuccess, sendError } = require("../utils/response");
 
 const userDocumentController = {
@@ -10,8 +11,8 @@ const userDocumentController = {
       const requestingUserId = req.user.id;
       const requestingUserRole = req.user.role;
 
-      // User chỉ có thể xem documents của chính họ, trừ khi là admin
-      if (requestingUserId !== userId && requestingUserRole !== "ADMIN") {
+      // User chỉ có thể xem documents của chính họ, trừ khi là admin hoặc staff
+      if (requestingUserId !== userId && requestingUserRole !== "ADMIN" && requestingUserRole !== "STAFF") {
         return sendError(res, {
           status: 403,
           message: "Bạn không có quyền xem giấy tờ của người khác.",
@@ -131,6 +132,16 @@ const userDocumentController = {
         return sendError(res, {
           message: "Không thể cập nhật trạng thái giấy tờ.",
         });
+      }
+
+      // Nếu document được verify, cũng update user verification status
+      if (status === "VERIFIED") {
+        try {
+          await UserRepository.updateVerificationStatus(existingDocument.userId, "VERIFIED");
+        } catch (userUpdateError) {
+          console.error("Error updating user verification status:", userUpdateError);
+          // Không throw error vì document đã được update thành công
+        }
       }
 
       const updatedDocument = await UserDocumentRepository.findById(id);

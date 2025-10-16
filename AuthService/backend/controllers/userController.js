@@ -1,5 +1,7 @@
 ﻿const UserRepository = require("../repositories/UserRepository");
+const UserVerificationLogRepository = require("../repositories/UserVerificationLogRepository");
 const { sendSuccess, sendError } = require("../utils/response");
+const { v4: uuidv4 } = require("uuid");
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -140,6 +142,168 @@ const userController = {
       console.error("deleteUser error", error);
       return sendError(res, {
         message: "Không thể xóa người dùng.",
+      });
+    }
+  },
+
+  // VERIFY USER ONSITE (STAFF/ADMIN)
+  async verifyUserOnsite(req, res) {
+    try {
+      const { id: userId } = req.params;
+      const { stationId, note, evidenceUrls } = req.body;
+      const staffId = req.user.id;
+      const normalizedStationId =
+        typeof stationId === "string" ? stationId.trim() : stationId;
+
+      if (!normalizedStationId) {
+        return sendError(res, {
+          status: 400,
+          message: "Thiếu thông tin: stationId là bắt buộc.",
+          code: "MISSING_FIELDS",
+        });
+      }
+
+      // Verify user exists
+      const user = await UserRepository.findById(userId);
+      if (!user) {
+        return sendError(res, {
+          status: 404,
+          message: "Người dùng không tồn tại.",
+          code: "NOT_FOUND",
+        });
+      }
+
+      const sanitizedNote =
+        typeof note === "string" && note.trim().length > 0 ? note.trim() : null;
+
+      let normalizedEvidence = null;
+      if (Array.isArray(evidenceUrls)) {
+        const cleanedEvidence = evidenceUrls
+          .map((url) => (typeof url === "string" ? url.trim() : ""))
+          .filter((url) => url.length > 0);
+
+        if (cleanedEvidence.length > 0) {
+          normalizedEvidence = JSON.stringify(cleanedEvidence);
+        }
+      } else if (typeof evidenceUrls === "string" && evidenceUrls.trim()) {
+        normalizedEvidence = JSON.stringify([evidenceUrls.trim()]);
+      } else if (
+        evidenceUrls &&
+        typeof evidenceUrls === "object" &&
+        !Array.isArray(evidenceUrls)
+      ) {
+        normalizedEvidence = JSON.stringify(evidenceUrls);
+      }
+
+      let updatedVerificationStatus = user.verificationStatus;
+      if ((user.verificationStatus || "").toUpperCase() !== "VERIFIED") {
+        const verificationUpdated = await UserRepository.updateVerificationStatus(
+          userId,
+          "VERIFIED"
+        );
+
+        if (!verificationUpdated) {
+          return sendError(res, {
+            status: 500,
+            message: "Khong the cap nhat trang thai xac thuc.",
+          });
+        }
+
+        updatedVerificationStatus = "VERIFIED";
+      }
+
+      // Create verification log
+      const logData = {
+        id: uuidv4(),
+        userId,
+        staffId,
+        stationId: normalizedStationId,
+        note: sanitizedNote,
+        evidenceUrls: normalizedEvidence,
+      };
+
+      await UserVerificationLogRepository.create(logData);
+
+      return sendSuccess(res, {
+        status: 201,
+        message: "Xác thực tại điểm thành công.",
+        data: {
+          userId,
+          stationId: normalizedStationId,
+          verifiedBy: staffId,
+          verificationStatus: updatedVerificationStatus,
+        },
+      });
+    } catch (error) {
+      console.error("verifyUserOnsite error", error);
+      return sendError(res, {
+        message: "Không thể xác thực người dùng tại điểm.",
+      });
+    }
+  },
+
+  // GET USER VERIFICATION LOGS
+  async getUserVerificationLogs(req, res) {
+    try {
+      const { id: userId } = req.params;
+      const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+      const limit = DEFAULT_PAGE_SIZE;
+      const offset = (page - 1) * limit;
+
+      // Verify user exists
+      const user = await UserRepository.findById(userId);
+      if (!user) {
+        return sendError(res, {
+          status: 404,
+          message: "Người dùng không tồn tại.",
+          code: "NOT_FOUND",
+        });
+      }
+
+      // Use findByUserId instead of findAll for simplicity
+      const logs = await UserVerificationLogRepository.findByUserId(userId);
+      const normalizedLogs = logs.map((log) => {
+        const stationValue = log.stationId || log.station_id || "N/A";
+
+        let parsedEvidence = null;
+        const rawEvidence =
+          log.evidenceUrls !== undefined ? log.evidenceUrls : log.evidence_urls;
+
+        if (Array.isArray(rawEvidence)) {
+          parsedEvidence = rawEvidence;
+        } else if (typeof rawEvidence === "string" && rawEvidence.trim()) {
+          try {
+            parsedEvidence = JSON.parse(rawEvidence);
+          } catch (parseError) {
+            parsedEvidence = rawEvidence;
+          }
+        }
+
+        return {
+          id: log.id,
+          userId: log.userId || log.user_id,
+          staffId: log.staffId || log.staff_id,
+          stationId: stationValue,
+          stationName: stationValue,
+          note: log.note || null,
+          evidenceUrls: parsedEvidence,
+          createdAt: log.createdAt || log.created_at,
+          staffName: log.staffName || log.staff_name || null,
+          staffEmail: log.staffEmail || log.staff_email || null,
+        };
+      });
+
+      const totalItems = await UserVerificationLogRepository.count({ userId });
+      const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / limit);
+
+      return sendSuccess(res, {
+        message: "Lấy lịch sử xác thực thành công.",
+        data: normalizedLogs,
+      });
+    } catch (error) {
+      console.error("getUserVerificationLogs error", error);
+      return sendError(res, {
+        message: "Không thể lấy lịch sử xác thực.",
       });
     }
   },
