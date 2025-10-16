@@ -4,7 +4,7 @@ const path = require('path');
 
 // Đường dẫn tuyệt đối đến private key trong auth-svc
 const keyPath = path.join(__dirname, '../auth-svc/keys/private.pem');
-const privateKey = fs.readFileSync('./keys/private.pem', 'utf8');
+const privateKey = fs.readFileSync('../keys/private.pem', 'utf8');
 
 
 // Payload mẫu

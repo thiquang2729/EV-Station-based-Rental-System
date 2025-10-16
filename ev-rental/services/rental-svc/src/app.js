@@ -15,5 +15,6 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/v1/stations', stations);
 app.use('/api/v1/vehicles', vehicles);
 app.use('/api/v1/bookings', bookings);
+console.log('✅ /api/v1/bookings route ready');
 
 module.exports = app;

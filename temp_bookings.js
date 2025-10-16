@@ -1,10 +1,10 @@
-const express = require('express');
+﻿const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const r = express.Router();
 
 // ==============================
-// 1️⃣ Tạo đặt xe mới
+// 1ï¸âƒ£ Táº¡o Ä‘áº·t xe má»›i
 // ==============================
 r.post('/', async (req, res) => {
   const { vehicleId, stationId: stationIdInput, startTime, estDurationH } = req.body || {};
@@ -52,38 +52,24 @@ r.post('/', async (req, res) => {
 });
 
 // ==============================
-// 2️⃣ Lấy danh sách tất cả đơn đặt xe
+// 2ï¸âƒ£ Láº¥y danh sÃ¡ch táº¥t cáº£ Ä‘Æ¡n Ä‘áº·t xe
 // ==============================
-r.get('/', async (_req, res) => {
+r.get('/', async (req, res) => {
   try {
     const bookings = await prisma.booking.findMany({
-      orderBy: { createdAt: 'desc' },
+      include: {
+        vehicle: true,
+        station: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
 
-    const vehicleIds = [...new Set(bookings.map((b) => b.vehicleId))];
-    const stationIds = [...new Set(bookings.map((b) => b.stationId))];
-
-    const [vehicles, stations] = await Promise.all([
-      prisma.vehicle.findMany({
-        where: { id: { in: vehicleIds } },
-        select: { id: true, type: true, plate: true, pricePerHour: true },
-      }),
-      prisma.station.findMany({
-        where: { id: { in: stationIds } },
-        select: { id: true, name: true, address: true },
-      }),
-    ]);
-
-    const vMap = new Map(vehicles.map((v) => [v.id, v]));
-    const sMap = new Map(stations.map((s) => [s.id, s]));
-
-    const data = bookings.map((b) => ({
-      ...b,
-      vehicle: vMap.get(b.vehicleId) || null,
-      station: sMap.get(b.stationId) || null,
-    }));
-
-    res.json({ count: data.length, data });
+    res.json({
+      count: bookings.length,
+      data: bookings,
+    });
   } catch (err) {
     console.error('GET BOOKINGS ERROR:', err);
     res.status(500).json({ error: 'Failed to get bookings' });
@@ -91,7 +77,7 @@ r.get('/', async (_req, res) => {
 });
 
 // ==============================
-// 3️⃣ Trả xe
+// 3ï¸âƒ£ Tráº£ xe
 // ==============================
 r.patch('/:id/return', async (req, res) => {
   const { id } = req.params;
@@ -110,47 +96,6 @@ r.patch('/:id/return', async (req, res) => {
     res.json(booking);
   } catch (err) {
     res.status(500).json({ error: err.message });
-  }
-});
-
-// ==============================
-// 4️⃣ Danh sách đặt xe theo người dùng
-// ==============================
-r.get('/user/:userId', async (req, res) => {
-  const { userId } = req.params;
-  try {
-    const bookings = await prisma.booking.findMany({
-      where: { userId: String(userId) },
-      orderBy: { startTime: 'desc' },
-    });
-
-    const vehicleIds = [...new Set(bookings.map((b) => b.vehicleId))];
-    const stationIds = [...new Set(bookings.map((b) => b.stationId))];
-
-    const [vehicles, stations] = await Promise.all([
-      prisma.vehicle.findMany({
-        where: { id: { in: vehicleIds } },
-        select: { id: true, type: true, plate: true, pricePerHour: true },
-      }),
-      prisma.station.findMany({
-        where: { id: { in: stationIds } },
-        select: { id: true, name: true, address: true },
-      }),
-    ]);
-
-    const vMap = new Map(vehicles.map((v) => [v.id, v]));
-    const sMap = new Map(stations.map((s) => [s.id, s]));
-
-    const data = bookings.map((b) => ({
-      ...b,
-      vehicle: vMap.get(b.vehicleId) || null,
-      station: sMap.get(b.stationId) || null,
-    }));
-
-    res.json({ userId: String(userId), totalBookings: data.length, data });
-  } catch (err) {
-    console.error('GET USER BOOKINGS ERROR:', err);
-    res.status(500).json({ error: 'Failed to get booking history' });
   }
 });
 

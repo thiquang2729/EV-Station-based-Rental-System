@@ -11,7 +11,7 @@ r.get('/', async (_req, res) => {
     const vehicles = await prisma.vehicle.findMany();
     res.json({ success: true, message: 'OK', data: vehicles });
   } catch (err) {
-    console.error('❌ Lỗi khi lấy danh sách xe:', err);
+    console.error('❌ Lỗi khi lấy danhh sach xe:', err);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
