@@ -8,6 +8,10 @@ const DEFAULT_ROLE = "RENTER";
 const DEFAULT_VERIFICATION_STATUS = "PENDING";
 const DEFAULT_RISK_STATUS = "NONE";
 const isProduction = process.env.NODE_ENV === "production";
+const JWT_ISSUER = process.env.JWT_ISSUER || "auth-service";
+const JWT_AUDIENCE = process.env.JWT_AUDIENCE;
+const ACCESS_TOKEN_TTL = process.env.JWT_ACCESS_TTL || "1h";
+const REFRESH_TOKEN_TTL = process.env.JWT_REFRESH_TTL || "365d";
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: isProduction,
@@ -110,25 +114,35 @@ const authController = {
     }
   },
 
-  generateAccessToken: (user) =>
-    jwt.sign(
-      {
-        id: user.id,
-        role: user.role,
-      },
-      process.env.JWT_ACCESS_KEY,
-      { expiresIn: "1h" }
-    ),
+  generateAccessToken: (user) => {
+    const payload = {
+      iss: JWT_ISSUER,
+      sub: user.id,
+      id: user.id,
+      role: user.role,
+    };
 
-  generateRefreshToken: (user) =>
-    jwt.sign(
-      {
-        id: user.id,
-        role: user.role,
-      },
-      process.env.JWT_REFRESH_KEY,
-      { expiresIn: "365d" }
-    ),
+    if (JWT_AUDIENCE) {
+      payload.aud = JWT_AUDIENCE;
+    }
+
+    return jwt.sign(payload, process.env.JWT_ACCESS_KEY, { expiresIn: ACCESS_TOKEN_TTL });
+  },
+
+  generateRefreshToken: (user) => {
+    const payload = {
+      iss: JWT_ISSUER,
+      sub: user.id,
+      id: user.id,
+      role: user.role,
+    };
+
+    if (JWT_AUDIENCE) {
+      payload.aud = JWT_AUDIENCE;
+    }
+
+    return jwt.sign(payload, process.env.JWT_REFRESH_KEY, { expiresIn: REFRESH_TOKEN_TTL });
+  },
 
   loginUser: async (req, res) => {
     try {

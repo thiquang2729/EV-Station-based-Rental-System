@@ -35,6 +35,28 @@ app.options("*", cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());
 
+app.get("/health", async (req, res) => {
+  try {
+    const connection = await pool.getConnection();
+    await connection.ping();
+    connection.release();
+
+    res.status(200).json({
+      status: "ok",
+      service: "auth-service",
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Health check failed", error);
+    res.status(503).json({
+      status: "unhealthy",
+      service: "auth-service",
+      reason: "database_unreachable",
+    });
+  }
+});
+
 //ROUTES
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/users", userRoute);

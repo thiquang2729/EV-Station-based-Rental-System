@@ -3,7 +3,9 @@ const { sendError } = require("../utils/response");
 
 const extractTokenFromHeader = (req) => {
   const authHeader = req.headers.authorization || req.headers.token;
-  if (!authHeader) return null;
+  if (!authHeader) {
+    return null;
+  }
   if (authHeader.startsWith("Bearer ")) {
     return authHeader.split(" ")[1];
   }
@@ -12,17 +14,11 @@ const extractTokenFromHeader = (req) => {
 
 const verifyToken = (req, res, next) => {
   const token = extractTokenFromHeader(req);
-  
-  // console.log("=== TOKEN DEBUG ===");
-  // console.log("Headers:", req.headers);
-  // console.log("Authorization header:", req.headers.authorization);
-  // console.log("Token header:", req.headers.token);
-  // console.log("Extracted token:", token);
 
   if (!token) {
     return sendError(res, {
       status: 401,
-      message: "Bạn chưa đăng nhập.",
+      message: "You are not signed in.",
       code: "UNAUTHORIZED",
     });
   }
@@ -31,7 +27,7 @@ const verifyToken = (req, res, next) => {
     if (err) {
       return sendError(res, {
         status: 403,
-        message: "Token không hợp lệ.",
+        message: "Access token is invalid or expired.",
         code: "INVALID_TOKEN",
       });
     }
@@ -45,9 +41,10 @@ const verifyTokenAndUserAuthorization = (req, res, next) =>
     if (req.user.id === req.params.id || req.user.role === "ADMIN") {
       return next();
     }
+
     return sendError(res, {
       status: 403,
-      message: "Bạn không có quyền thực hiện hành động này.",
+      message: "You do not have permission to perform this action.",
       code: "FORBIDDEN",
     });
   });
@@ -57,9 +54,10 @@ const verifyTokenAndAdmin = (req, res, next) =>
     if (req.user.role === "ADMIN") {
       return next();
     }
+
     return sendError(res, {
       status: 403,
-      message: "Bạn không có quyền truy cập.",
+      message: "Administrator role required.",
       code: "FORBIDDEN",
     });
   });
@@ -69,9 +67,10 @@ const verifyTokenAndStaff = (req, res, next) =>
     if (req.user.role === "ADMIN" || req.user.role === "STAFF") {
       return next();
     }
+
     return sendError(res, {
       status: 403,
-      message: "Bạn không có quyền truy cập.",
+      message: "Staff or administrator role required.",
       code: "FORBIDDEN",
     });
   });
@@ -82,3 +81,4 @@ module.exports = {
   verifyTokenAndAdmin,
   verifyTokenAndStaff,
 };
+

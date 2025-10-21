@@ -63,6 +63,7 @@ import { getDocumentsByUserId } from "@/services/documentService";
 import { fetchStations as fetchExternalStations } from "@/services/external/stationService";
 import UserCard from "./UserCard";
 import UserDetailsModal from "./UserDetailsModal";
+import { buildApiUrl } from "@/config/apiConfig";
 
 export default function UserListTable() {
   const dispatch = useDispatch();
@@ -172,7 +173,7 @@ export default function UserListTable() {
       setUserDocuments(docsResponse.data || []);
 
       // Load verification logs
-      const logsResponse = await fetch(`http://localhost:8000/api/v1/users/${user.id}/verification-logs`, {
+      const logsResponse = await fetch(buildApiUrl(`/api/v1/users/${user.id}/verification-logs`), {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
@@ -198,7 +199,7 @@ export default function UserListTable() {
 
   const handleAdminVerify = async (user) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/users/${user.id}`, {
+      const response = await fetch(buildApiUrl(`/api/v1/users/${user.id}`), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -270,7 +271,7 @@ export default function UserListTable() {
 
     try {
       setVerifying(true);
-      const response = await fetch(`http://localhost:8000/api/v1/users/${selectedUser.id}/verify-onsite`, {
+      const response = await fetch(buildApiUrl(`/api/v1/users/${selectedUser.id}/verify-onsite`), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,

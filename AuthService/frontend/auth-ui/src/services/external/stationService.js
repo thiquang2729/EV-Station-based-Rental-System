@@ -1,7 +1,12 @@
 import axios from "axios";
+import { buildApiUrl, getApiBaseUrl } from "@/config/apiConfig";
 
-const EXTERNAL_BASE_URL = "http://localhost:3002"; // service khác
-const AUTH_BACKEND_BASE_URL = "http://localhost:8000"; // backend hiện tại (fallback)
+const normalize = (value) =>
+  value ? value.replace(/\/+$/, "") : value;
+
+const EXTERNAL_BASE_URL =
+  normalize(import.meta.env.VITE_RENTAL_SERVICE_BASE_URL) ?? getApiBaseUrl();
+const AUTH_BACKEND_BASE_URL = getApiBaseUrl();
 
 export async function fetchStations() {
   try {
@@ -12,7 +17,7 @@ export async function fetchStations() {
     return data;
   } catch (err) {
     // Fallback to mock endpoint in auth backend
-    const res = await axios.get(`${AUTH_BACKEND_BASE_URL}/api/v1/stations`);
+    const res = await axios.get(buildApiUrl("/api/v1/stations"));
     const data = Array.isArray(res.data) ? res.data : res.data?.data;
     return Array.isArray(data) ? data : [];
   }
