@@ -1,0 +1,24 @@
+{
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+  "editor.suggest.snippetsPreventQuickSuggestions": false,
+  "editor.tabCompletion": "on",
+  "emmet.triggerExpansionOnTab": true,
+  "emmet.includeLanguages": {
+    "javascript": "javascriptreact",
+    "javascriptreact": "javascriptreact",
+    "html": "html"
+  },
+  "emmet.syntaxProfiles": {
+    "javascript": "jsx",
+    "javascriptreact": "jsx"
+  },
+  "tailwindCSS.emmetCompletions": true,
+  "tailwindCSS.includeLanguages": {
+    "javascript": "javascript",
+    "javascriptreact": "javascriptreact",
+    "html": "html"
+  }
+}
+

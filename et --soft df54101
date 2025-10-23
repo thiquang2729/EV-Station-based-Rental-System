@@ -1,0 +1,13 @@
+[33mb8bc5f4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtest-api[m[33m, [m[1;32mmain[m[33m)[m HEAD@{0}: reset: moving to HEAD~1
+[33m21ee777[m HEAD@{1}: reset: moving to HEAD~1
+[33mdf54101[m HEAD@{2}: reset: moving to HEAD~1
+[33mc46eb93[m HEAD@{3}: reset: moving to c46eb93
+[33mdf54101[m HEAD@{4}: reset: moving to df54101
+[33mdf54101[m HEAD@{5}: reset: moving to HEAD~1
+[33mc46eb93[m HEAD@{6}: reset: moving to HEAD~1
+[33m7efca7f[m[33m ([m[1;31morigin/test-api[m[33m)[m HEAD@{7}: commit: .
+[33mc46eb93[m HEAD@{8}: commit: API dat xe
+[33mdf54101[m HEAD@{9}: commit: dat xe
+[33m21ee777[m HEAD@{10}: commit: update
+[33mb8bc5f4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtest-api[m[33m, [m[1;32mmain[m[33m)[m HEAD@{11}: checkout: moving from main to test-api
+[33mb8bc5f4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtest-api[m[33m, [m[1;32mmain[m[33m)[m HEAD@{12}: commit (initial): danh sách xe ,sự cố,danh sách trạm tổng xe

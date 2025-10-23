@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 4000;
 
 // Dữ liệu mô phỏng
 let vehicles = [
