@@ -16,12 +16,36 @@ r.get('/', async (_req, res) => {
 // Lấy chi tiết 1 điểm thuê
 r.get('/:id', async (req, res) => {
   try {
+    const { id } = req.params;
     const station = await prisma.station.findUnique({
-      where: { id: Number(req.params.id) },
+      where: { id: isNaN(id) ? id : Number(id) },
     });
     if (!station) return res.status(404).json({ error: 'Station not found' });
     res.json(station);
   } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create a new station
+r.post('/', async (req, res) => {
+  try {
+    const { name, address, lat, lng } = req.body || {};
+    if (!name || lat === undefined || lng === undefined) {
+      return res.status(400).json({ error: 'name, lat, lng là bắt buộc' });
+    }
+    const station = await prisma.station.create({
+      data: {
+        name: String(name),
+        address: address ? String(address) : '',
+        lat: Number(lat),
+        lng: Number(lng),
+      },
+    });
+    res.status(201).json(station);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

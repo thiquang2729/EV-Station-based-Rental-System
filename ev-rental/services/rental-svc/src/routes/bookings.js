@@ -1,9 +1,23 @@
-const express = require('express');
+﻿const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const r = express.Router();
 
-// Tạo đặt xe mới
+// Danh sách booking (mặc định mới nhất trước)
+r.get('/', async (_req, res) => {
+  try {
+    const bookings = await prisma.booking.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    res.json(bookings);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Táº¡o Ä‘áº·t xe má»›i
 r.post('/', async (req, res) => {
   const { vehicleId, stationId: stationIdInput, startTime, estDurationH } = req.body || {};
   const userId = String((req.body && req.body.userId) || 'dev-user');
@@ -49,7 +63,7 @@ r.post('/', async (req, res) => {
   }
 });
 
-// Trả xe
+// Tráº£ xe
 r.patch('/:id/return', async (req, res) => {
   const { id } = req.params;
   try {
@@ -71,3 +85,4 @@ r.patch('/:id/return', async (req, res) => {
 });
 
 module.exports = r;
+

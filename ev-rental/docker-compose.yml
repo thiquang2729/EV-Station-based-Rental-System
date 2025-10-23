@@ -33,8 +33,6 @@ services:
     container_name: admin-svc
     environment:
       PORT: 3001
-    ports:
-      - "3001:3001"
 
   rental-svc:
     build: ./services/rental-svc
@@ -49,8 +47,7 @@ services:
         condition: service_healthy
       admin-svc:
         condition: service_started
-    ports:
-      - "3002:3002"
+    ports: []
 
   fleet-svc:
     build: ./services/fleet-svc
@@ -67,14 +64,13 @@ services:
         condition: service_healthy
       admin-svc:
         condition: service_started
-    ports:
-      - "3003:3003"
+    ports: []
 
   nginx-gateway:
     image: nginx:latest
     container_name: nginx-gateway
     ports:
-      - "80:80"
+      - "4000:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:

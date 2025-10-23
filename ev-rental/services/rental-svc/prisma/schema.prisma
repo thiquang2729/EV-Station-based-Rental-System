@@ -19,6 +19,7 @@ model Station {
 
 model Vehicle {
   id            String   @id @default(cuid())
+  name          String   @default("Unknown")
   stationId     String
   station       Station  @relation(fields: [stationId], references: [id])
   type          String
@@ -28,6 +29,7 @@ model Vehicle {
   pricePerHour  Int
   isAvailable   Boolean  @default(true)
   bookings      Booking[]
+  incidents     Incident[]
 }
 
 model Booking {
@@ -58,4 +60,16 @@ model Handover {
   odo       Int
   notes     String?
   createdAt DateTime @default(now())
+}
+
+model Incident {
+  id          String   @id @default(cuid())
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
+  stationId   String
+  reporterId  String
+  severity    String
+  desc        String
+  photos      Json
+  createdAt   DateTime @default(now())
 }

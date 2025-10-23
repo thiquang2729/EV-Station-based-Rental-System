@@ -5,6 +5,7 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 # generate prisma client trước khi start
-RUN npx prisma generate
+RUN ./node_modules/.bin/prisma generate
 EXPOSE 3002
-CMD ["npm","run","start"]
+# Ensure DB schema exists in dev, then start service
+CMD ["sh","-c","./node_modules/.bin/prisma db push && node src/index.js"]
