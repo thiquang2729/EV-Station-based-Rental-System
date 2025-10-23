@@ -15,7 +15,7 @@ const App = () => {
 
 
       <Header />
-      <img src={assets.menu} alt="menu test" width={40} />
+      {/* <img src={assets.menu} alt="menu test" width={40} /> */}
       <Routes>
         <Route path="/" element={<Home />} />
 
