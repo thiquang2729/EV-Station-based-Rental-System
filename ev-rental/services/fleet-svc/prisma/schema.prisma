@@ -30,6 +30,7 @@ model Vehicle {
   healthStatus  String   @default("OK")
   pricePerHour  Int
   isAvailable   Boolean  @default(true)
+  imageUrl      String?
   incidents     Incident[]
 }
 

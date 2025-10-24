@@ -38,6 +38,35 @@ r.get('/:id', async (req, res) => {
 });
 
 /**
+ * Update vehicle fields
+ * PUT /api/v1/vehicles/:id
+ */
+r.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, stationId, type, plate, pricePerHour, isAvailable, batteryLevel, healthStatus, imageUrl } = req.body || {};
+    const updated = await prisma.vehicle.update({
+      where: { id: isNaN(id) ? id : Number(id) },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(stationId !== undefined && { stationId }),
+        ...(type !== undefined && { type }),
+        ...(plate !== undefined && { plate }),
+        ...(pricePerHour !== undefined && { pricePerHour }),
+        ...(isAvailable !== undefined && { isAvailable }),
+        ...(batteryLevel !== undefined && { batteryLevel }),
+        ...(healthStatus !== undefined && { healthStatus }),
+        ...(imageUrl !== undefined && { imageUrl }),
+      }
+    });
+    res.json({ success: true, message: 'Vehicle updated', data: updated });
+  } catch (err) {
+    console.error('Error updating vehicle:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+/**
  * ⚙️ Cập nhật trạng thái hoặc thông tin xe
  * PUT /api/v1/vehicles/:id/status
  */
@@ -81,6 +110,7 @@ r.post('/', async (req, res) => {
       healthStatus,
       pricePerHour // ✅ thêm giá thuê
     } = req.body;
+    const imageUrl = req.body.imageUrl;
 
     // ⚠️ Kiểm tra thông tin bắt buộc
     if (!id || !stationId || !type || !plate || !pricePerHour) {
@@ -102,7 +132,8 @@ r.post('/', async (req, res) => {
         isAvailable: isAvailable ?? true,
         batteryLevel: batteryLevel ?? 100,
         healthStatus: healthStatus || "GOOD",
-        pricePerHour
+        pricePerHour,
+        imageUrl: imageUrl || null
       },
     });
 
@@ -118,6 +149,21 @@ r.post('/', async (req, res) => {
       message: 'Internal server error', 
       error: err.message 
     });
+  }
+});
+
+/**
+ * Delete vehicle
+ * DELETE /api/v1/vehicles/:id
+ */
+r.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.vehicle.delete({ where: { id: isNaN(id) ? id : Number(id) } });
+    res.json({ success: true, message: 'Vehicle deleted' });
+  } catch (err) {
+    console.error('Error deleting vehicle:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 

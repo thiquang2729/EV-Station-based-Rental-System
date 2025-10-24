@@ -92,12 +92,41 @@
 // };
 
 // export default Header;
-import React from 'react'
+import React, { useEffect, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 
 const Header = () => {
-    return (
-        <div>Header</div>
-    )
-}
+  const [elevated, setElevated] = useState(false);
+  const location = useLocation();
+  const isHome = location.pathname === '/';
 
-export default Header
+  useEffect(() => {
+    const onScroll = () => setElevated(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  return (
+    <header className={`${(elevated || !isHome) ? 'bg-white/90 backdrop-blur border-b border-gray-200/60' : 'bg-transparent'} sticky top-0 z-40`}> 
+      <div className="max-padd-container h-16 flexBetween">
+        <Link to="/" className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-black inline-block" />
+          <span className="font-bold">Carhive</span>
+        </Link>
+        <nav className="hidden md:flex items-center gap-6 text-sm">
+          <NavLink to="/" className={({isActive})=> isActive? 'active-link px-2 py-1':'px-2 py-1'}>Home</NavLink>
+          <NavLink to="/listing" className={({isActive})=> isActive? 'active-link px-2 py-1':'px-2 py-1'}>Listing</NavLink>
+          <NavLink to="/my-bookings" className={({isActive})=> isActive? 'active-link px-2 py-1':'px-2 py-1'}>My bookings</NavLink>
+          <NavLink to="/contact" className={({isActive})=> isActive? 'active-link px-2 py-1':'px-2 py-1'}>Contact</NavLink>
+        </nav>
+        <div className="flex items-center gap-3">
+          <button className="btn-outline hidden sm:inline-flex">Sign in</button>
+          <button className="btn-soild">Get started</button>
+        </div>
+      </div>
+      {/* Vehicle quick list bar removed as requested */}
+    </header>
+  );
+};
+
+export default Header;

@@ -50,4 +50,37 @@ r.post('/', async (req, res) => {
   }
 });
 
+// Update a station
+r.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, address, lat, lng } = req.body || {};
+    const updated = await prisma.station.update({
+      where: { id: isNaN(id) ? id : Number(id) },
+      data: {
+        ...(name !== undefined && { name: String(name) }),
+        ...(address !== undefined && { address: String(address) }),
+        ...(lat !== undefined && { lat: Number(lat) }),
+        ...(lng !== undefined && { lng: Number(lng) }),
+      },
+    });
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete a station
+r.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.station.delete({ where: { id: isNaN(id) ? id : Number(id) } });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = r;

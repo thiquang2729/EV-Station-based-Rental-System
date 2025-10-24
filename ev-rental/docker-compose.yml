@@ -52,13 +52,8 @@ services:
   fleet-svc:
     build: ./services/fleet-svc
     container_name: fleet-svc
-    environment:
-      PORT: 3003
-      DATABASE_URL: mysql://evuser:evpass@mysql:3306/evrental
-      SHADOW_DATABASE_URL: mysql://root:root@mysql:3306/evrental_shadow
-      S3_REGION: ap-southeast-1
-      S3_BUCKET: evrental-dev-assets
-      S3_PRESIGN_EXPIRES: 300
+    env_file:
+      - ./services/fleet-svc/.env
     depends_on:
       mysql:
         condition: service_healthy

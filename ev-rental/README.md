@@ -2,10 +2,12 @@
 
 Toàn bộ API truy cập qua 1 cổng duy nhất: `http://localhost:4000` (nginx-gateway). Các service nội bộ không mở cổng 3001/3002/3003 ra ngoài.
 
-| Service               | Base URL (qua gateway)          | Ví dụ endpoint                                                 | Công dụng            |
+| Service               | Base URL (qua gateway)          | Ví dụ endpoint                                                 | Công dụng        
+
 | --------------------- | -------------------------------- | -------------------------------------------------------------- | ------------------- |
 | rental-svc (gateway)  | `http://localhost:4000/rental`   | `/health`, `/api/v1/stations`, `/api/v1/vehicles`, `/api/v1/bookings` | Thuê xe, trả xe     |
-| fleet-svc (gateway)   | `http://localhost:4000/fleet`    | `/health`, `/api/v1/vehicles`, `/api/v1/overview`              | Quản lý đội xe/trạm |
+| fleet-svc (gateway)   | `http://localhost:4000/fleet`    | `/health`, `/api/v1/vehicles`, `/api/v1/overview` 
+http://localhost:4000/fleet/api/v1/incidents   sự cố|              | Quản lý đội xe/trạm |
 | admin-svc (gateway)   | `http://localhost:4000/admin`    | `/health`, `/admin/vehicles`, `/admin/reports`                 | Quản trị hệ thống   |
 | adminer (DB UI)       | `http://localhost:8080`          | Giao diện Adminer                                              | Xem DB MySQL        |
 | mysql (DB server)     | `localhost:3307`                 | (kết nối qua Adminer/Workbench)                                | Lưu dữ liệu hệ thống|

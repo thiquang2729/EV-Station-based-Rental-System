@@ -7,7 +7,8 @@ import CarDetails from './pages/CarDetails';
 import Blog from './pages/Blog';
 import Contact from './pages/Contact';
 import MyBookings from './pages/MyBookings';
-import Home from './pages/Home'; // nếu có
+import Home from './pages/Home';
+import Admin from './pages/Admin'; // nếu có
 
 const App = () => {
   return (
@@ -24,6 +25,7 @@ const App = () => {
         <Route path="/blog" element={<Blog />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/my-bookings" element={<MyBookings />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
       <Footer />
 
@@ -33,3 +35,4 @@ const App = () => {
 };
 
 export default App;
+

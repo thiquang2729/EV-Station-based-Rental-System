@@ -32,10 +32,30 @@
 // };
 
 // export default Navbar;
-import React from 'react'
+import React from 'react';
+import { NavLink } from 'react-router-dom';
 
-export const Navbar = () => {
-    return (
-        <div>Navbar</div>
-    )
-}
+const Navbar = ({ setMenuOpened, containerStyles = '' }) => {
+  const navLinks = [
+    { path: '/', title: 'Home' },
+    { path: '/listing', title: 'Listing' },
+    { path: '/blog', title: 'Blog' },
+    { path: '/contact', title: 'Contact' },
+  ];
+  return (
+    <nav className={containerStyles}>
+      {navLinks.map((l) => (
+        <NavLink
+          key={l.title}
+          to={l.path}
+          onClick={() => setMenuOpened && setMenuOpened(false)}
+          className={({ isActive }) => `${isActive ? 'active-link' : ''} px-3 py-2 rounded-full uppercase text-sm font-bold`}
+        >
+          {l.title}
+        </NavLink>
+      ))}
+    </nav>
+  );
+};
+
+export default Navbar;

@@ -97,3 +97,8 @@ body {
 }
 
 /* Responsive utilities applied via media queries (Tailwind v4 doesn't support variants in @apply) */
+
+/* Auto-scrolling marquee utility */
+.animate-brand-marquee { animation: brand-marquee 20s linear infinite; will-change: transform; }
+@media (prefers-reduced-motion: reduce) { .animate-brand-marquee { animation: none; } }
+@keyframes brand-marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
