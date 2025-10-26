@@ -24,12 +24,12 @@ import { RiEyeCloseLine } from "react-icons/ri";
 import DefaultAuth from "layouts/auth/Default";
 import { HSeparator } from "components/separator/Separator";
 import { loginUser, resetStatus } from "../features/auth/authSlice";
-import illustration from "assets/img/auth/auth.png";
+import illustration from "../assets/img/auth/auth.png";
 import { hasAdminAccess } from "../utils/auth";
 
 const TEXT = {
-  title: "Chào mừng trở lại",
-  subtitle: "Nhập thông tin đăng nhập để tiếp tục quản lý trạm sạc.",
+  title: "Thuê Xe Điện - EV Rental",
+  subtitle: "Nhập thông tin đăng nhập",
   emailRequired: "Vui lòng nhập email.",
   passwordRequired: "Vui lòng nhập mật khẩu.",
   processing: "Đang xử lý...",
@@ -71,7 +71,7 @@ const LoginPage = () => {
       const redirectTarget =
         location.state?.from && location.state.reason !== "unauthorized"
           ? location.state.from
-          : "/admin/default";
+          : "/admin";
       navigate(redirectTarget, { replace: true });
       return;
     }

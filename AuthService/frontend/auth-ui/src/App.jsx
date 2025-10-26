@@ -4,6 +4,9 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import HomePage from "./pages/HomePage";
+import AboutUser from "./pages/AboutUser";
+import Reports from "./pages/Reports";
+import AdminPage from "./pages/AdminPage";
 import AdminLayout from "layouts/admin";
 import AuthLayout from "layouts/auth";
 import RTLLayout from "layouts/rtl";
@@ -38,7 +41,7 @@ const App = () => {
 
   const getDefaultRedirect = () => {
     if (!user) return "/login";
-    return isAdmin ? "/admin/default" : "/home";
+    return isAdmin ? "/admin" : "/home";
   };
 
   const defaultRedirect = getDefaultRedirect();
@@ -49,6 +52,16 @@ const App = () => {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/home" element={<HomePage />} />
+      <Route path="/about-user" element={<AboutUser />} />
+      <Route path="/reports" element={<Reports />} />
+      <Route
+        path="/admin"
+        element={
+          <RequireAdmin>
+            <AdminPage />
+          </RequireAdmin>
+        }
+      />
       <Route
         path="/admin/*"
         element={

@@ -14,6 +14,7 @@ export default function Footer() {
   let linkColor = useColorModeValue({ base: "gray.400", lg: "white" }, "white");
   return (
     <Flex
+    pt="200px"
       zIndex='3'
       flexDirection={{
         base: "column",
@@ -34,8 +35,8 @@ export default function Footer() {
         }}
         mb={{ base: "20px", lg: "0px" }}>
         &copy; {1900 + new Date().getYear()}
-        <Text as='span' fontWeight='500' ms='4px'>
-          XDHDT EV Rental. Thiết kế trên nền tảng Horizon UI.
+        <Text as='span' fontWeight='500' ms='4px' pt="5px">
+          XDHDT EV Rental
         </Text>
       </Text>
       <List display='flex'>

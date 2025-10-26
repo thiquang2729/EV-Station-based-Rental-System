@@ -38,7 +38,7 @@ import tableDataColumns from "views/admin/dataTables/variables/tableDataColumns.
 import tableDataComplex from "views/admin/dataTables/variables/tableDataComplex.json";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { fetchUsers } from "@/services/userService";
+import userService from "@/services/userService";
 
 export default function Settings() {
   const { accessToken } = useSelector((state) => state.auth);
@@ -49,8 +49,8 @@ export default function Settings() {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetchUsers({ page: 1, riskStatus: 'BANNED', accessToken });
-        setRiskyUsers(res.data || []);
+        const res = await userService.fetchUsers({ page: 1, riskStatus: 'BANNED', accessToken });
+        setRiskyUsers(res.data || res || []);
       } catch (e) {
         setRiskyUsers([]);
       } finally {

@@ -6,15 +6,32 @@ const { v4: uuidv4 } = require("uuid");
 const DEFAULT_PAGE_SIZE = 10;
 
 const userController = {
-  // GET USERS WITH PAGINATION
+  // GET USERS WITH PAGINATION AND ADVANCED FILTERS
   async getAllUsers(req, res) {
     try {
       const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
       const riskStatus = (req.query.riskStatus || "").trim() || null;
+      const search = (req.query.search || "").trim() || null;
+      
+      // Advanced filters
+      const role = (req.query.role || "").trim() || null;
+      const verificationStatus = (req.query.verificationStatus || "").trim() || null;
+      const dateFrom = req.query.dateFrom || null;
+      const dateTo = req.query.dateTo || null;
+      
       const limit = DEFAULT_PAGE_SIZE;
       const offset = (page - 1) * limit;
 
-      const { users, totalItems } = await UserRepository.paginate({ limit, offset, riskStatus });
+      const { users, totalItems } = await UserRepository.paginate({ 
+        limit, 
+        offset, 
+        riskStatus, 
+        search,
+        role,
+        verificationStatus,
+        dateFrom,
+        dateTo
+      });
       const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / limit);
 
       return sendSuccess(res, {
@@ -50,6 +67,45 @@ const userController = {
     }
   },
 
+  // GET USER REGISTRATION STATISTICS BY DATE
+  async getUserRegistrationStats(req, res) {
+    try {
+      const { period = '7d' } = req.query;
+      
+      // Validate period parameter
+      const validPeriods = ['7d', '30d', '90d'];
+      if (!validPeriods.includes(period)) {
+        return sendError(res, {
+          status: 400,
+          message: "Khoảng thời gian không hợp lệ. Chỉ chấp nhận: 7d, 30d, 90d",
+          code: "INVALID_PERIOD",
+        });
+      }
+
+      // Map period to days
+      const daysMap = {
+        '7d': 7,
+        '30d': 30,
+        '90d': 90
+      };
+      const days = daysMap[period];
+
+      const stats = await UserRepository.getRegistrationStatsByDate(days);
+      
+      return sendSuccess(res, {
+        message: "Lấy thống kê đăng ký theo ngày thành công.",
+        data: stats,
+        period: period,
+        totalDays: days
+      });
+    } catch (error) {
+      console.error("getUserRegistrationStats error", error);
+      return sendError(res, {
+        message: "Không thể lấy thống kê đăng ký theo ngày.",
+      });
+    }
+  },
+
   // GET USER BY ID
   async getUserById(req, res) {
     try {
@@ -80,7 +136,7 @@ const userController = {
   // UPDATE USER
   async updateUser(req, res) {
     try {
-      const { phoneNumber, role, verificationStatus, riskStatus } = req.body;
+      const { fullName, phoneNumber, role, verificationStatus, riskStatus } = req.body;
       const userId = req.params.id;
 
       // Check if user exists
@@ -95,6 +151,7 @@ const userController = {
 
       // Update user
       const updateData = {};
+      if (fullName !== undefined) updateData.fullName = fullName;
       if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
       if (role !== undefined) updateData.role = role;
       if (verificationStatus !== undefined) updateData.verificationStatus = verificationStatus;
@@ -308,6 +365,60 @@ const userController = {
       });
     }
   },
+
+  // UPDATE CURRENT USER PROFILE (for users to update their own info)
+  async updateCurrentUserProfile(req, res) {
+    try {
+      const { fullName, phoneNumber } = req.body;
+      const userId = req.user.id; // Get user ID from token
+
+      // Check if user exists
+      const existingUser = await UserRepository.findById(userId);
+      if (!existingUser) {
+        return sendError(res, {
+          status: 404,
+          message: "Người dùng không tồn tại.",
+          code: "NOT_FOUND",
+        });
+      }
+
+      // Update user profile (only allow fullName and phoneNumber)
+      const updateData = {};
+      if (fullName !== undefined) updateData.fullName = fullName;
+      if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+
+      if (Object.keys(updateData).length === 0) {
+        return sendError(res, {
+          status: 400,
+          message: "Không có dữ liệu để cập nhật.",
+          code: "NO_DATA_TO_UPDATE",
+        });
+      }
+
+      const success = await UserRepository.update(userId, updateData);
+      if (!success) {
+        return sendError(res, {
+          message: "Không thể cập nhật thông tin cá nhân.",
+        });
+      }
+
+      // Get updated user
+      const updatedUser = await UserRepository.findById(userId);
+      const { passwordHash, refreshToken, ...safeUser } = updatedUser;
+
+      return sendSuccess(res, {
+        message: "Cập nhật thông tin cá nhân thành công.",
+        data: safeUser,
+      });
+    } catch (error) {
+      console.error("updateCurrentUserProfile error", error);
+      return sendError(res, {
+        message: "Không thể cập nhật thông tin cá nhân.",
+      });
+    }
+  },
 };
 
 module.exports = userController;
+
+

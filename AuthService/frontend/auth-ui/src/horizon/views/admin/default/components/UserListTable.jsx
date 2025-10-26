@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -52,18 +52,22 @@ import {
   MdCheckCircle,
   MdImage,
   MdLocationOn,
-  MdNote
+  MdNote,
+  MdSearch,
+  MdClear
 } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUserList, deleteUserById, resetDeleteState } from "@/features/users/userListSlice";
 import { fetchUserStats } from "@/features/users/userStatsSlice";
 import { hasAdminAccess, isAdminOnly } from "@/utils/auth";
-import { getUserById } from "@/services/userService";
+import userService from "@/services/userService";
 import { getDocumentsByUserId } from "@/services/documentService";
 import { fetchStations as fetchExternalStations } from "@/services/external/stationService";
+import AdvancedSearchBox from "./AdvancedSearchBox";
 import UserCard from "./UserCard";
 import UserDetailsModal from "./UserDetailsModal";
 import { buildApiUrl } from "@/config/apiConfig";
+import debounce from "lodash.debounce";
 
 export default function UserListTable() {
   const dispatch = useDispatch();
@@ -91,6 +95,16 @@ export default function UserListTable() {
   const [stations, setStations] = useState([]);
   const [loadingStations, setLoadingStations] = useState(false);
 
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    role: null,
+    verificationStatus: null,
+    riskStatus: null,
+    dateFrom: null,
+    dateTo: null,
+  });
+
   const textColor = useColorModeValue("secondaryGray.900", "white");
   const textColorSecondary = useColorModeValue("secondaryGray.600", "white");
   const cardBg = useColorModeValue("white", "navy.800");
@@ -105,9 +119,29 @@ export default function UserListTable() {
   const isAdmin = hasAdminAccess(user);
   const isAdminStrict = isAdminOnly(user);
 
+  // Handle search from AdvancedSearchBox
+  const handleAdvancedSearch = (searchValue) => {
+    setSearchTerm(searchValue);
+    dispatch(fetchUserList({ 
+      page: 1, 
+      search: searchValue.trim() || null,
+      ...filters
+    }));
+  };
+
+  // Handle filters change from AdvancedSearchBox
+  const handleFiltersChange = (newFilters) => {
+    setFilters(newFilters);
+    dispatch(fetchUserList({ 
+      page: 1, 
+      search: searchTerm.trim() || null,
+      ...newFilters
+    }));
+  };
+
   useEffect(() => {
     if (isAdmin && status === "idle") {
-      dispatch(fetchUserList(1));
+      dispatch(fetchUserList({ page: 1 }));
     }
   }, [dispatch, status, isAdmin]);
 
@@ -165,8 +199,10 @@ export default function UserListTable() {
 
     try {
       // Load user details
-      const userResponse = await getUserById({ userId: user.id, accessToken });
-      setUserDetails(userResponse.data || userResponse);
+      const userResponse = await userService.getUserById({ userId: user.id, accessToken });
+      console.log('User details response:', userResponse);
+      console.log('User riskStatus:', userResponse.data?.data?.riskStatus || userResponse.data?.riskStatus || userResponse.riskStatus);
+      setUserDetails(userResponse.data?.data || userResponse.data || userResponse);
 
       // Load user documents
       const docsResponse = await getDocumentsByUserId({ userId: user.id, accessToken });
@@ -219,7 +255,7 @@ export default function UserListTable() {
           isClosable: true,
         });
         // Refresh user list and stats
-        dispatch(fetchUserList(1));
+        dispatch(fetchUserList({ page: 1, search: searchTerm }));
         dispatch(fetchUserStats());
       } else {
         const errorData = await response.json();
@@ -290,7 +326,7 @@ export default function UserListTable() {
         });
         onVerifyClose();
         // Refresh user list and stats
-        dispatch(fetchUserList(1));
+        dispatch(fetchUserList({ page: 1, search: searchTerm }));
         dispatch(fetchUserStats());
         // Refresh user details if view modal is open
         if (isViewOpen) {
@@ -395,6 +431,16 @@ export default function UserListTable() {
           )}
         </Flex>
 
+        {/* Advanced Search Box */}
+        <AdvancedSearchBox
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          onSearch={handleAdvancedSearch}
+          onFiltersChange={handleFiltersChange}
+          isLoading={status === "loading"}
+          placeholder="Tìm kiếm theo tên, email, số điện thoại..."
+        />
+
         {users && users.length > 0 ? (
           <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} gap="20px">
             {users.map((user) => (
@@ -431,7 +477,7 @@ export default function UserListTable() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => dispatch(fetchUserList(1))}
+                onClick={() => dispatch(fetchUserList({ page: 1, search: searchTerm, ...filters }))}
                 isDisabled={pagination.currentPage === 1}
               >
                 Đầu
@@ -439,7 +485,7 @@ export default function UserListTable() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => dispatch(fetchUserList(pagination.currentPage - 1))}
+                onClick={() => dispatch(fetchUserList({ page: pagination.currentPage - 1, search: searchTerm, ...filters }))}
                 isDisabled={pagination.currentPage === 1}
               >
                 Trước
@@ -464,7 +510,7 @@ export default function UserListTable() {
                     size="sm"
                     variant={pageNum === pagination.currentPage ? "solid" : "outline"}
                     colorScheme={pageNum === pagination.currentPage ? "blue" : "gray"}
-                    onClick={() => dispatch(fetchUserList(pageNum))}
+                    onClick={() => dispatch(fetchUserList({ page: pageNum, search: searchTerm, ...filters }))}
                     minW="40px"
                   >
                     {pageNum}
@@ -475,7 +521,7 @@ export default function UserListTable() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => dispatch(fetchUserList(pagination.currentPage + 1))}
+                onClick={() => dispatch(fetchUserList({ page: pagination.currentPage + 1, search: searchTerm, ...filters }))}
                 isDisabled={pagination.currentPage === pagination.totalPages}
               >
                 Sau
@@ -483,7 +529,7 @@ export default function UserListTable() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => dispatch(fetchUserList(pagination.totalPages))}
+                onClick={() => dispatch(fetchUserList({ page: pagination.totalPages, search: searchTerm, ...filters }))}
                 isDisabled={pagination.currentPage === pagination.totalPages}
               >
                 Cuối
@@ -524,6 +570,8 @@ export default function UserListTable() {
       </AlertDialog>
 
       <UserDetailsModal
+        mb="20px"
+        mt="20px"
         isOpen={isViewOpen}
         onClose={onViewClose}
         loading={loadingUserDetails}

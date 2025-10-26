@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
@@ -40,6 +40,16 @@ import { hasAdminAccess } from "../utils/auth";
 import { uploadDocument, getDocumentsByUserId } from "../services/documentService";
 import { getComplaintsByRenterId, createComplaint } from "../services/complaintService";
 
+// Import new components
+import Header from "../components/Header";
+import HeroSection from "../components/HeroSection";
+import AboutUsSection from "../components/AboutUsSection";
+import ProcessSection from "../components/ProcessSection";
+import FleetSection from "../components/FleetSection";
+import TestimonialsSection from "../components/TestimonialsSection";
+import CTASection from "../components/CTASection";
+import Footer from "../components/Footer";
+
 const HomePage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -80,7 +90,7 @@ const HomePage = () => {
 
     // Nếu là admin, chuyển về admin dashboard
     if (hasAdminAccess(user)) {
-      navigate("/admin/default", { replace: true });
+      navigate("/admin", { replace: true });
       return;
     }
 
@@ -123,6 +133,10 @@ const HomePage = () => {
     }
   };
 
+  const handleNavigateToAboutUser = () => {
+    navigate("/about-user");
+  };
+
   const handleLogout = () => {
     dispatch(logoutUser());
     navigate("/login", { replace: true });
@@ -141,12 +155,6 @@ const HomePage = () => {
       });
       return;
     }
-
-    console.log("Creating complaint with:", { 
-      renterId: user.id, 
-      details: complaintDetails.trim(), 
-      accessToken: accessToken ? "EXISTS" : "NULL" 
-    });
 
     try {
       setCreatingComplaint(true);
@@ -255,7 +263,7 @@ const HomePage = () => {
       setSelectedFile(null);
       setPreviewUrl(null);
       setDocumentType("DRIVER_LICENSE");
-      onClose();
+      uploadModal.onClose();
 
       // Reload documents
       loadDocuments();
@@ -371,489 +379,32 @@ const HomePage = () => {
   }
 
   return (
-    <Box minH="100vh" bg={bgColor} py="40px">
-      <Container maxW="container.md">
-        <VStack spacing="30px" align="stretch">
-          {/* Header Card */}
-          <Card bg={cardBg} p="40px" borderRadius="20px" boxShadow="lg">
-            <VStack spacing="25px" align="stretch">
-              {/* Welcome Section */}
-              <Flex align="center" justify="space-between" flexWrap="wrap" gap="20px">
-                <Flex align="center" gap="20px">
-                  <Avatar
-                    size="xl"
-                    name={user.fullName || user.email}
-                    bg={brandColor}
-                    color="white"
-                  />
-                  <VStack align="start" spacing="5px">
-                    <Heading size="lg" color={textColor}>
-                      Xin chào, {user.fullName || "Người dùng"}!
-                    </Heading>
-                    <Text color={textSecondary} fontSize="md">
-                      Chào mừng bạn đến với hệ thống
-                    </Text>
-                  </VStack>
-                </Flex>
-              </Flex>
+    <Box minH="100vh" bg={bgColor}>
+      {/* Header */}
+      <Header user={user} onLogout={handleLogout} onNavigateToAboutUser={handleNavigateToAboutUser} />
+      
+      {/* Hero Section */}
+      <HeroSection />
+      
+      {/* Process Section */}
+      <ProcessSection />
+      
+      {/* Fleet Section */}
+      <FleetSection />
+      
+      {/* About Us Section */}
+      <AboutUsSection />
+      
+      {/* Testimonials Section */}
+      <TestimonialsSection />
+      
+      {/* CTA Section */}
+      <CTASection />
 
-              <Divider />
-
-              {/* User Info Section */}
-              <VStack spacing="20px" align="stretch">
-                <Heading size="md" color={textColor}>
-                  Thông tin tài khoản
-                </Heading>
-
-                <VStack spacing="15px" align="stretch">
-                  {/* Email */}
-                  <Flex align="center" gap="15px">
-                    <Flex
-                      align="center"
-                      justify="center"
-                      w="40px"
-                      h="40px"
-                      borderRadius="10px"
-                      bg={useColorModeValue("brand.50", "brand.900")}
-                    >
-                      <Icon as={MdPerson} w="20px" h="20px" color={brandColor} />
-                    </Flex>
-                    <Box flex="1">
-                      <Text color={textSecondary} fontSize="sm" fontWeight="500">
-                        Email
-                      </Text>
-                      <Text color={textColor} fontSize="md" fontWeight="600">
-                        {user.email}
-                      </Text>
-                    </Box>
-                  </Flex>
-
-                  {/* Phone Number */}
-                  {user.phoneNumber && (
-                    <Flex align="center" gap="15px">
-                      <Flex
-                        align="center"
-                        justify="center"
-                        w="40px"
-                        h="40px"
-                        borderRadius="10px"
-                        bg={useColorModeValue("brand.50", "brand.900")}
-                      >
-                        <Icon as={MdPerson} w="20px" h="20px" color={brandColor} />
-                      </Flex>
-                      <Box flex="1">
-                        <Text color={textSecondary} fontSize="sm" fontWeight="500">
-                          Số điện thoại
-                        </Text>
-                        <Text color={textColor} fontSize="md" fontWeight="600">
-                          {user.phoneNumber}
-                        </Text>
-                      </Box>
-                    </Flex>
-                  )}
-
-                  {/* Role */}
-                  <Flex align="center" gap="15px">
-                    <Flex
-                      align="center"
-                      justify="center"
-                      w="40px"
-                      h="40px"
-                      borderRadius="10px"
-                      bg={useColorModeValue("purple.50", "purple.900")}
-                    >
-                      <Icon as={MdSecurity} w="20px" h="20px" color="purple.500" />
-                    </Flex>
-                    <Box flex="1">
-                      <Text color={textSecondary} fontSize="sm" fontWeight="500">
-                        Vai trò
-                      </Text>
-                      <Box mt="5px">{getRoleBadge(user.role)}</Box>
-                    </Box>
-                  </Flex>
-
-                  {/* Verification Status */}
-                  <Flex align="center" gap="15px">
-                    <Flex
-                      align="center"
-                      justify="center"
-                      w="40px"
-                      h="40px"
-                      borderRadius="10px"
-                      bg={useColorModeValue("green.50", "green.900")}
-                    >
-                      <Icon as={MdVerifiedUser} w="20px" h="20px" color="green.500" />
-                    </Flex>
-                    <Box flex="1">
-                      <Text color={textSecondary} fontSize="sm" fontWeight="500">
-                        Trạng thái xác thực
-                      </Text>
-                      <Box mt="5px">{getVerificationBadge(user.verificationStatus)}</Box>
-                    </Box>
-                  </Flex>
-
-                  {/* Risk Status */}
-                  {user.riskStatus && user.riskStatus !== "NONE" && (
-                    <Flex align="center" gap="15px">
-                      <Flex
-                        align="center"
-                        justify="center"
-                        w="40px"
-                        h="40px"
-                        borderRadius="10px"
-                        bg={useColorModeValue("red.50", "red.900")}
-                      >
-                        <Icon as={MdSecurity} w="20px" h="20px" color="red.500" />
-                      </Flex>
-                      <Box flex="1">
-                        <Text color={textSecondary} fontSize="sm" fontWeight="500">
-                          Trạng thái rủi ro
-                        </Text>
-                        <Box mt="5px">{getRiskBadge(user.riskStatus)}</Box>
-                      </Box>
-                    </Flex>
-                  )}
-                </VStack>
-              </VStack>
-            </VStack>
-          </Card>
-
-          {/* Actions Card */}
-          <Card bg={cardBg} p="30px" borderRadius="20px" boxShadow="lg">
-            <VStack spacing="20px" align="stretch">
-              <Heading size="md" color={textColor}>
-                Hành động
-              </Heading>
-
-              <VStack spacing="15px">
-                {/* Upload Documents Button */}
-                <Button
-                  leftIcon={<Icon as={MdUploadFile} w="20px" h="20px" />}
-                  colorScheme="brand"
-                  size="lg"
-                  width="100%"
-                  height="60px"
-                  onClick={handleUploadDocuments}
-                  fontSize="md"
-                  fontWeight="600"
-                >
-                  Upload giấy tờ tùy thân
-                </Button>
-
-                {/* Create Complaint Button */}
-                <Button
-                  leftIcon={<Icon as={MdWarning} w="20px" h="20px" />}
-                  colorScheme="orange"
-                  size="lg"
-                  width="100%"
-                  height="60px"
-                  onClick={complaintModal.onOpen}
-                  fontSize="md"
-                  fontWeight="600"
-                >
-                  Gửi khiếu nại
-                </Button>
-
-                {/* Logout Button */}
-                <Button
-                  leftIcon={<Icon as={MdLogout} w="20px" h="20px" />}
-                  colorScheme="red"
-                  variant="outline"
-                  size="lg"
-                  width="100%"
-                  height="60px"
-                  onClick={handleLogout}
-                  fontSize="md"
-                  fontWeight="600"
-                >
-                  Đăng xuất
-                </Button>
-              </VStack>
-            </VStack>
-          </Card>
-
-          {/* Info Card - Only show if verification pending */}
-          {user.verificationStatus === "PENDING" && (
-            <Card bg={infoBg} p="25px" borderRadius="20px">
-              <HStack spacing="15px">
-                <Icon as={MdVerifiedUser} w="30px" h="30px" color="orange.500" />
-                <Box>
-                  <Text color={textColor} fontWeight="600" fontSize="md" mb="5px">
-                    Tài khoản của bạn đang chờ xác thực
-                  </Text>
-                  <Text color={textSecondary} fontSize="sm">
-                    Vui lòng upload giấy tờ tùy thân để hoàn tất quá trình xác thực.
-                  </Text>
-                </Box>
-              </HStack>
-            </Card>
-          )}
-
-          {/* Documents List Card */}
-          <Card bg={cardBg} p="30px" borderRadius="20px" boxShadow="lg">
-            <VStack spacing="20px" align="stretch">
-              <Heading size="md" color={textColor}>
-                Giấy tờ đã upload
-              </Heading>
-
-              {loadingDocs ? (
-                <Flex justify="center" py="40px">
-                  <Spinner size="lg" color={brandColor} />
-                </Flex>
-              ) : documents.length > 0 ? (
-                <SimpleGrid columns={{ base: 1, md: 2 }} gap="15px">
-                  {documents.map((doc) => (
-                    <Card
-                      key={doc.id}
-                      bg={docCardBg}
-                      p="20px"
-                      borderRadius="15px"
-                    >
-                      <VStack align="stretch" spacing="10px">
-                        <Flex justify="space-between" align="center">
-                          <Text color={textColor} fontWeight="600" fontSize="sm">
-                            {getDocumentTypeLabel(doc.documentType)}
-                          </Text>
-                          {getDocumentStatusBadge(doc.status)}
-                        </Flex>
-                        
-                        {doc.fileUrl && doc.fileUrl.match(/\.(jpg|jpeg|png|webp)$/i) && (
-                          <Box
-                            as="a"
-                            href={doc.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            cursor="pointer"
-                            _hover={{ opacity: 0.8 }}
-                          >
-                            <Image
-                              src={doc.fileUrl}
-                              alt={getDocumentTypeLabel(doc.documentType)}
-                              borderRadius="10px"
-                              maxH="200px"
-                              objectFit="cover"
-                              w="100%"
-                            />
-                          </Box>
-                        )}
-                        
-                        <Text color={textSecondary} fontSize="xs">
-                          Upload: {new Date(doc.uploadedAt).toLocaleDateString("vi-VN")}
-                        </Text>
-                      </VStack>
-                    </Card>
-                  ))}
-                </SimpleGrid>
-              ) : (
-                <Flex
-                  direction="column"
-                  align="center"
-                  justify="center"
-                  py="40px"
-                  gap="10px"
-                >
-                  <Icon as={MdImage} w="60px" h="60px" color={textSecondary} />
-                  <Text color={textSecondary} fontSize="md">
-                    Chưa có giấy tờ nào được upload
-                  </Text>
-                </Flex>
-              )}
-            </VStack>
-          </Card>
-
-          {/* Complaints List Card */}
-          <Card bg={cardBg} p="30px" borderRadius="20px" boxShadow="lg">
-            <VStack spacing="20px" align="stretch">
-              <Flex justify="space-between" align="center">
-                <Heading size="md" color={textColor}>
-                  Khiếu nại của bạn
-                </Heading>
-                <Button
-                  size="sm"
-                  colorScheme="orange"
-                  leftIcon={<Icon as={MdAdd} />}
-                  onClick={complaintModal.onOpen}
-                >
-                  Gửi khiếu nại
-                </Button>
-              </Flex>
-
-              {loadingComplaints ? (
-                <Flex justify="center" py="40px">
-                  <Spinner size="lg" color={brandColor} />
-                </Flex>
-              ) : complaints.length > 0 ? (
-                <VStack spacing="15px" align="stretch">
-                  {complaints.map((complaint) => (
-                    <Card
-                      key={complaint.id}
-                      bg={docCardBg}
-                      p="20px"
-                      borderRadius="15px"
-                    >
-                      <VStack align="stretch" spacing="10px">
-                        <Flex justify="space-between" align="center">
-                          {getComplaintStatusBadge(complaint.status)}
-                          <Text color={textSecondary} fontSize="xs">
-                            {new Date(complaint.createdAt).toLocaleString("vi-VN")}
-                          </Text>
-                        </Flex>
-                        <Text color={textColor} fontSize="sm" whiteSpace="pre-wrap">
-                          {complaint.details}
-                        </Text>
-                        {complaint.reporterName && (
-                          <Text color={textSecondary} fontSize="xs">
-                            Báo cáo bởi: {complaint.reporterName}
-                          </Text>
-                        )}
-                      </VStack>
-                    </Card>
-                  ))}
-                </VStack>
-              ) : (
-                <Flex
-                  direction="column"
-                  align="center"
-                  justify="center"
-                  py="40px"
-                  gap="10px"
-                >
-                  <Icon as={MdWarning} w="60px" h="60px" color={textSecondary} />
-                  <Text color={textSecondary} fontSize="md">
-                    Chưa có khiếu nại nào
-                  </Text>
-                </Flex>
-              )}
-            </VStack>
-          </Card>
-        </VStack>
-      </Container>
-
-      {/* Upload Modal */}
-      <Modal isOpen={uploadModal.isOpen} onClose={handleModalClose} size="lg" isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Upload giấy tờ tùy thân</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <VStack spacing="20px">
-              <FormControl isRequired>
-                <FormLabel>Loại giấy tờ</FormLabel>
-                <Select
-                  value={documentType}
-                  onChange={(e) => setDocumentType(e.target.value)}
-                >
-                  <option value="DRIVER_LICENSE">Bằng lái xe</option>
-                  <option value="NATIONAL_ID">CMND/CCCD</option>
-                </Select>
-              </FormControl>
-
-              <FormControl isRequired>
-                <FormLabel>Chọn file</FormLabel>
-                <Input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
-                  onChange={handleFileSelect}
-                  display="none"
-                />
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  width="100%"
-                  leftIcon={<Icon as={MdUploadFile} />}
-                  variant="outline"
-                >
-                  {selectedFile ? selectedFile.name : "Chọn file..."}
-                </Button>
-                <Text fontSize="xs" color={textSecondary} mt="5px">
-                  Chấp nhận: JPEG, PNG, WEBP, PDF (tối đa 5MB)
-                </Text>
-              </FormControl>
-
-              {previewUrl && (
-                <Box w="100%">
-                  <Text fontSize="sm" fontWeight="600" mb="10px">
-                    Xem trước:
-                  </Text>
-                  <Image
-                    src={previewUrl}
-                    alt="Preview"
-                    borderRadius="10px"
-                    maxH="300px"
-                    objectFit="contain"
-                    w="100%"
-                  />
-                </Box>
-              )}
-            </VStack>
-          </ModalBody>
-
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={handleModalClose}>
-              Hủy
-            </Button>
-            <Button
-              colorScheme="brand"
-              onClick={handleUploadSubmit}
-              isLoading={uploading}
-              loadingText="Đang tải lên..."
-            >
-              Tải lên
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* Create Complaint Modal */}
-      <Modal isOpen={complaintModal.isOpen} onClose={complaintModal.onClose} size="lg" isCentered>
-        <ModalOverlay />
-        <ModalContent as="form" onSubmit={handleCreateComplaint}>
-          <ModalHeader>Gửi khiếu nại</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <VStack spacing="20px" align="stretch">
-              <Box p="15px" bg={useColorModeValue("orange.50", "orange.900")} borderRadius="8px">
-                <HStack spacing="10px">
-                  <Icon as={MdWarning} color="orange.500" w="20px" h="20px" />
-                  <Text fontSize="sm" color={textColor}>
-                    Khiếu nại của bạn sẽ được gửi đến bộ phận hỗ trợ và được xử lý sớm nhất có thể.
-                  </Text>
-                </HStack>
-              </Box>
-
-              <FormControl isRequired>
-                <FormLabel>Chi tiết khiếu nại</FormLabel>
-                <Textarea
-                  placeholder="Mô tả chi tiết về vấn đề, sự cố hoặc khiếu nại của bạn..."
-                  value={complaintDetails}
-                  onChange={(e) => setComplaintDetails(e.target.value)}
-                  rows={8}
-                />
-                <Text fontSize="xs" color={textSecondary} mt="5px">
-                  Hãy cung cấp thông tin chi tiết để chúng tôi có thể hỗ trợ bạn tốt hơn.
-                </Text>
-              </FormControl>
-            </VStack>
-          </ModalBody>
-
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={complaintModal.onClose}>
-              Hủy
-            </Button>
-            <Button
-              colorScheme="orange"
-              type="submit"
-              isLoading={creatingComplaint}
-              loadingText="Đang gửi..."
-            >
-              Gửi khiếu nại
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      {/* Footer */}
+      <Footer />
     </Box>
   );
 };
 
 export default HomePage;
-

@@ -1,7 +1,10 @@
 // frontend/auth-ui/src/services/stationService.js
 import axios from 'axios';
 
-import { getApiBaseUrl } from "@/config/apiConfig";
+import { getApiBaseUrl, clearApiBaseUrlOverride } from "@/config/apiConfig";
+
+// Clear any cached API base URL to ensure we use the latest configuration
+clearApiBaseUrlOverride();
 
 // Create axios instance with default config
 const apiClient = axios.create({

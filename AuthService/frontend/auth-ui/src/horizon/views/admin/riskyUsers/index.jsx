@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, SimpleGrid, Spinner, Text, useColorModeValue, Flex, useDisclosure, Badge } from "@chakra-ui/react";
 import { useSelector } from "react-redux";
-import { fetchUsers, getUserById } from "@/services/userService";
+import userService from "@/services/userService";
 import UserCard from "views/admin/default/components/UserCard";
 import UserDetailsModal from "views/admin/default/components/UserDetailsModal";
 
@@ -26,11 +26,13 @@ export default function RiskyUsersPage() {
       setLoading(true);
       try {
         const [bannedRes, warnedRes] = await Promise.all([
-          fetchUsers({ page: 1, riskStatus: "BANNED", accessToken }),
-          fetchUsers({ page: 1, riskStatus: "WARNED", accessToken }),
+          userService.fetchUsers({ page: 1, riskStatus: "BANNED", accessToken }),
+          userService.fetchUsers({ page: 1, riskStatus: "WARNED", accessToken }),
         ]);
-        setBannedUsers(bannedRes.data || []);
-        setWarnedUsers(warnedRes.data || []);
+        console.log('Banned response:', bannedRes);
+        console.log('Warned response:', warnedRes);
+        setBannedUsers(bannedRes.data || bannedRes || []);
+        setWarnedUsers(warnedRes.data || warnedRes || []);
       } catch (e) {
         setBannedUsers([]);
         setWarnedUsers([]);
@@ -47,8 +49,10 @@ export default function RiskyUsersPage() {
     setLoadingDetails(true);
     onOpen();
     try {
-      const res = await getUserById({ userId: user.id, accessToken });
-      setUserDetails(res.data || res);
+      const res = await userService.getUserById({ userId: user.id, accessToken });
+      console.log('Risky user details response:', res);
+      console.log('Risky user riskStatus:', res.data?.data?.riskStatus || res.data?.riskStatus || res.riskStatus);
+      setUserDetails(res.data?.data || res.data || res);
     } catch (e) {
       setUserDetails(null);
     } finally {

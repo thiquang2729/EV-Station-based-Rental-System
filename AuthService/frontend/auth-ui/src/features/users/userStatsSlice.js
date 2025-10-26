@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { getUserStats } from "../../services/userService";
+import userService from "../../services/userService";
 import { refreshAuthSession } from "../auth/authSlice";
 
 export const fetchUserStats = createAsyncThunk(
@@ -9,7 +9,7 @@ export const fetchUserStats = createAsyncThunk(
     const accessToken = state.auth?.accessToken;
 
     const requestStats = async (token) => {
-      const response = await getUserStats(token);
+      const response = await userService.getUserStats(token);
       return response;
     };
 

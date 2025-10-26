@@ -1,17 +1,26 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { fetchUsers, deleteUser } from "../../services/userService";
+import userService from "../../services/userService";
 import { refreshAuthSession } from "../auth/authSlice";
 
 const DEFAULT_PAGE = 1;
 
 export const fetchUserList = createAsyncThunk(
   "userList/fetch",
-  async (page = DEFAULT_PAGE, { getState, dispatch, rejectWithValue }) => {
+  async ({ page = DEFAULT_PAGE, search = null, riskStatus = null, role = null, verificationStatus = null, dateFrom = null, dateTo = null }, { getState, dispatch, rejectWithValue }) => {
     const state = getState();
     const accessToken = state.auth?.accessToken;
 
     const requestList = async (token) => {
-      const response = await fetchUsers({ page, accessToken: token });
+      const response = await userService.fetchUsers({ 
+        page, 
+        search, 
+        riskStatus,
+        role,
+        verificationStatus,
+        dateFrom,
+        dateTo,
+        accessToken: token 
+      });
       return response;
     };
 
@@ -52,7 +61,7 @@ export const deleteUserById = createAsyncThunk(
     const accessToken = state.auth?.accessToken;
 
     const requestDelete = async (token) => {
-      const response = await deleteUser({ userId, accessToken: token });
+      const response = await userService.deleteUser({ userId, accessToken: token });
       return { userId, response };
     };
 

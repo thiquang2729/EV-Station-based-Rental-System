@@ -2,10 +2,7 @@ const STORAGE_KEY = "app.apiBaseUrl";
 const QUERY_PARAM = "apiBaseUrl";
 
 const getDefaultOrigin = () => {
-  if (typeof window !== "undefined" && window.location) {
-    return `${window.location.protocol}//${window.location.host}`;
-  }
-  return "http://localhost:8080";
+  return "http://localhost:8003";
 };
 
 const normalizeUrl = (raw) => {

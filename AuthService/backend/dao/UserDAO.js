@@ -115,18 +115,50 @@ class UserDAO {
     await this.updateRefreshToken(userId, null);
   }
 
-  static async paginate({ limit = 10, offset = 0, riskStatus }) {
+  static async paginate({ limit = 10, offset = 0, riskStatus, search, role, verificationStatus, dateFrom, dateTo }) {
     const parsedLimit = Number(limit);
     const parsedOffset = Number(offset);
 
     const safeLimit = Number.isInteger(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
     const safeOffset = Number.isInteger(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
 
-    // Use query() instead of execute() for LIMIT/OFFSET as some MySQL versions
-    // don't support prepared statement parameters for these clauses
-    const whereClause = riskStatus
-      ? `WHERE UPPER(risk_status) = UPPER(${pool.escape(riskStatus)})`
-      : ``;
+    // Build WHERE clause với multiple conditions
+    const conditions = [];
+    
+    // Risk status filter
+    if (riskStatus) {
+      conditions.push(`UPPER(risk_status) = UPPER(${pool.escape(riskStatus)})`);
+    }
+    
+    // Role filter
+    if (role) {
+      conditions.push(`UPPER(role) = UPPER(${pool.escape(role)})`);
+    }
+    
+    // Verification status filter
+    if (verificationStatus) {
+      conditions.push(`UPPER(verification_status) = UPPER(${pool.escape(verificationStatus)})`);
+    }
+    
+    // Date range filter
+    if (dateFrom) {
+      conditions.push(`created_at >= ${pool.escape(dateFrom)}`);
+    }
+    if (dateTo) {
+      conditions.push(`created_at <= ${pool.escape(dateTo)}`);
+    }
+    
+    // Search filter - tìm kiếm trong full_name, email, phone_number
+    if (search) {
+      const searchPattern = `%${search}%`;
+      conditions.push(`(
+        LOWER(full_name) LIKE LOWER(${pool.escape(searchPattern)}) OR 
+        LOWER(email) LIKE LOWER(${pool.escape(searchPattern)}) OR 
+        LOWER(phone_number) LIKE LOWER(${pool.escape(searchPattern)})
+      )`);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const listSql = `
       SELECT
@@ -134,6 +166,7 @@ class UserDAO {
         full_name AS fullName,
         email,
         phone_number AS phoneNumber,
+        role,
         verification_status AS verificationStatus,
         risk_status AS riskStatus,
         created_at AS createdAt
@@ -163,6 +196,10 @@ class UserDAO {
     const fields = [];
     const values = [];
 
+    if (data.fullName !== undefined) {
+      fields.push("full_name = ?");
+      values.push(data.fullName);
+    }
     if (data.phoneNumber !== undefined) {
       fields.push("phone_number = ?");
       values.push(data.phoneNumber);
@@ -235,6 +272,39 @@ class UserDAO {
       unverifiedUsers,
       statusBreakdown,
     };
+  }
+
+  // GET USER REGISTRATION STATISTICS BY DATE
+  static async getRegistrationStatsByDate(days) {
+    const sql = `
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*) as count
+      FROM users 
+      WHERE created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `;
+
+    const [rows] = await pool.execute(sql, [days]);
+    
+    // Đảm bảo có dữ liệu cho tất cả các ngày trong khoảng thời gian
+    const result = [];
+    const today = new Date();
+    
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      const existingData = rows.find(row => row.date.toISOString().split('T')[0] === dateStr);
+      result.push({
+        date: dateStr,
+        count: existingData ? Number(existingData.count) : 0
+      });
+    }
+    
+    return result;
   }
 
   static async updateVerificationStatus(userId, verificationStatus) {

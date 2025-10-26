@@ -43,6 +43,7 @@ const formatUserResponse = (user) => ({
   id: user.id,
   fullName: user.fullName,
   email: user.email,
+  phoneNumber: user.phoneNumber,
   role: user.role,
   verificationStatus: user.verificationStatus,
   riskStatus: user.riskStatus,

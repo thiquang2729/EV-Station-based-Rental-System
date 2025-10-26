@@ -41,13 +41,13 @@ import { useDispatch, useSelector } from "react-redux";
 
 import MiniStatistics from "components/card/MiniStatistics";
 import IconBox from "components/icons/IconBox";
-import TotalSpent from "views/admin/default/components/TotalSpent";
-import WeeklyRevenue from "views/admin/default/components/WeeklyRevenue";
-import CheckTable from "views/admin/default/components/CheckTable";
-import ComplexTable from "views/admin/default/components/ComplexTable";
-import DailyTraffic from "views/admin/default/components/DailyTraffic";
-import PieCard from "views/admin/default/components/PieCard";
-import Tasks from "views/admin/default/components/Tasks";
+import UserRegistrationChart from "views/admin/default/components/UserRegistrationChart";
+// import WeeklyRevenue from "views/admin/default/components/WeeklyRevenue";
+// import CheckTable from "views/admin/default/components/CheckTable";
+// import ComplexTable from "views/admin/default/components/ComplexTable";
+// import DailyTraffic from "views/admin/default/components/DailyTraffic";
+// import PieCard from "views/admin/default/components/PieCard";
+// import Tasks from "views/admin/default/components/Tasks";
 import MiniCalendar from "components/calendar/MiniCalendar";
 import UserListTable from "views/admin/default/components/UserListTable";
 import {
@@ -106,7 +106,7 @@ export default function UserReports() {
 
   const isLoading = isAdmin && (status === "loading" || status === "idle");
 
-  const safeStats = stats || {
+  const safeStats = stats?.data || stats || {
     totalUsers: 0,
     verifiedUsers: 0,
     unverifiedUsers: 0,
@@ -219,24 +219,24 @@ export default function UserReports() {
         ))}
       </SimpleGrid>
 
-      <SimpleGrid columns={{ base: 1, md: 2, xl: 2 }} gap="20px" mb="20px">
-        <TotalSpent />
-        <WeeklyRevenue />
-      </SimpleGrid>
+      {/* <SimpleGrid columns={{ base: 1, md: 2, xl: 2 }} gap="20px" mb="20px"> */}
+        <UserRegistrationChart />
+        {/* <WeeklyRevenue /> */}
+      {/* </SimpleGrid> */}
       <SimpleGrid columns={{ base: 1, md: 1, xl: 2 }} gap="20px" mb="20px">
-        <CheckTable columnsData={columnsDataCheck} tableData={tableDataCheck} />
+        {/* <CheckTable columnsData={columnsDataCheck} tableData={tableDataCheck} /> */}
         <SimpleGrid columns={{ base: 1, md: 2, xl: 2 }} gap="20px">
-          <DailyTraffic />
-          <PieCard />
+          {/* <DailyTraffic />
+          <PieCard /> */}
         </SimpleGrid>
       </SimpleGrid>
-      <SimpleGrid columns={{ base: 1, md: 1, xl: 2 }} gap="20px" mb="20px">
-        <ComplexTable columnsData={columnsDataComplex} tableData={tableDataComplex} />
-        <SimpleGrid columns={{ base: 1, md: 2, xl: 2 }} gap="20px">
-          <Tasks />
-          <MiniCalendar h="100%" minW="100%" selectRange={false} />
-        </SimpleGrid>
-      </SimpleGrid>
+      {/* <SimpleGrid columns={{ base: 1, md: 1, xl: 2 }} gap="20px" mb="20px"> */}
+        {/* <ComplexTable columnsData={columnsDataComplex} tableData={tableDataComplex} /> */}
+        {/* <SimpleGrid columns={{ base: 1, md: 2, xl: 2 }} gap="20px"> */}
+          {/* <Tasks /> */}
+          <MiniCalendar mb="20px" h="100%" minW="100%" selectRange={false} />
+        {/* </SimpleGrid> */}
+      {/* </SimpleGrid> */}
       
       {/* User List Section */}
       <Box mb="20px">

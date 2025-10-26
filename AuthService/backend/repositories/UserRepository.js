@@ -25,8 +25,8 @@ class UserRepository {
     return UserDAO.clearRefreshToken(userId);
   }
 
-  static async paginate({ limit, offset, riskStatus }) {
-    return UserDAO.paginate({ limit, offset, riskStatus });
+  static async paginate({ limit, offset, riskStatus, search, role, verificationStatus, dateFrom, dateTo }) {
+    return UserDAO.paginate({ limit, offset, riskStatus, search, role, verificationStatus, dateFrom, dateTo });
   }
 
   static async update(id, data) {
@@ -39,6 +39,10 @@ class UserRepository {
 
   static async getStats() {
     return UserDAO.getStats();
+  }
+
+  static async getRegistrationStatsByDate(days) {
+    return UserDAO.getRegistrationStatsByDate(days);
   }
 
   static async updateVerificationStatus(userId, verificationStatus) {

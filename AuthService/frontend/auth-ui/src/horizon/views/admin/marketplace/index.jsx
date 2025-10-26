@@ -23,7 +23,7 @@ import {
 } from "@chakra-ui/react";
 import { MdArrowBack, MdSave, MdImage, MdCheckCircle, MdCancel, MdPending } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
-import { getUserById, updateUser } from "@/services/userService";
+import userService from "@/services/userService";
 import { getDocumentsByUserId, updateDocumentStatus } from "@/services/documentService";
 import { hasAdminAccess } from "@/utils/auth";
 
@@ -95,7 +95,7 @@ export default function EditUser() {
   const loadUserData = async () => {
     try {
       setLoading(true);
-      const response = await getUserById({ userId, accessToken });
+      const response = await userService.getUserById({ userId, accessToken });
       const user = response.data || response;
       
       setUserData(user);
@@ -183,7 +183,7 @@ export default function EditUser() {
     
     try {
       setSaving(true);
-      await updateUser({
+      await userService.updateUser({
         userId,
         userData: formData,
         accessToken,

@@ -1,5 +1,8 @@
 import axios from "axios";
-import { buildApiUrl, getApiBaseUrl } from "@/config/apiConfig";
+import { buildApiUrl, getApiBaseUrl, clearApiBaseUrlOverride } from "@/config/apiConfig";
+
+// Clear any cached API base URL to ensure we use the latest configuration
+clearApiBaseUrlOverride();
 
 const normalize = (value) =>
   value ? value.replace(/\/+$/, "") : value;
