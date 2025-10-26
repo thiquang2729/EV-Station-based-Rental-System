@@ -1,6 +1,7 @@
 version: '3.9'
 
 services:
+  # 🧱 Database
   mysql:
     image: mysql:8.0
     container_name: ev-mysql
@@ -14,11 +15,12 @@ services:
     volumes:
       - dbdata:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       interval: 5s
       timeout: 5s
       retries: 10
 
+  # 🖥️ Adminer (UI để xem database)
   adminer:
     image: adminer
     container_name: ev-adminer
@@ -27,13 +29,14 @@ services:
     depends_on:
       - mysql
 
-  # 🔹 Thay auth-svc bằng admin-svc
+  # 🧩 Admin Service
   admin-svc:
     build: ./services/admin-svc
     container_name: admin-svc
     environment:
       PORT: 3001
 
+  # 🚗 Rental Service
   rental-svc:
     build: ./services/rental-svc
     container_name: rental-svc
@@ -49,11 +52,16 @@ services:
         condition: service_started
     ports: []
 
+  # 🚙 Fleet Service (nơi upload ảnh lên AWS S3)
   fleet-svc:
     build: ./services/fleet-svc
     container_name: fleet-svc
     env_file:
-      - ./services/fleet-svc/.env
+      - ./services/fleet-svc/.env # ⚙️ load key AWS từ đây
+    environment:
+      PORT: 3003
+      DATABASE_URL: mysql://evuser:evpass@mysql:3306/evrental
+      SHADOW_DATABASE_URL: mysql://root:root@mysql:3306/evrental_shadow
     depends_on:
       mysql:
         condition: service_healthy
@@ -61,6 +69,7 @@ services:
         condition: service_started
     ports: []
 
+  # 🌐 Nginx Gateway (điểm vào cho FE)
   nginx-gateway:
     image: nginx:latest
     container_name: nginx-gateway

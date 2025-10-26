@@ -171,7 +171,7 @@ function StationsAdmin() {
   );
 }
 
-import { listBookings } from '../api/rental';
+import { listBookings, returnBooking } from '../api/rental';
 function BookingsAdmin() {
   const [items, setItems] = useState([]);
   const [vehicleMap, setVehicleMap] = useState({});
@@ -201,6 +201,15 @@ function BookingsAdmin() {
       finally{ setLoading(false); }
     })();
   },[]);
+  const onReturn = async (id) => {
+    if (!confirm('Mark this booking as returned?')) return;
+    try {
+      const res = await returnBooking(id);
+      const data = res?.data ?? res;
+      setItems((arr) => arr.map(it => it.id === id ? { ...it, ...data } : it));
+    } catch (e) { alert(e.message || 'Return failed'); }
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div className="text-red-600">{error}</div>;
   return (
@@ -216,6 +225,7 @@ function BookingsAdmin() {
               <th className="px-3 py-2 text-left">Status</th>
               <th className="px-3 py-2 text-left">Start</th>
               <th className="px-3 py-2 text-left">End</th>
+              <th className="px-3 py-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -228,6 +238,13 @@ function BookingsAdmin() {
                 <td className="px-3 py-2">{b.status}</td>
                 <td className="px-3 py-2">{b.startTime}</td>
                 <td className="px-3 py-2">{b.endTime || '-'}</td>
+                <td className="px-3 py-2">
+                  {b.status !== 'RETURNED' ? (
+                    <button className="btn-outline" onClick={() => onReturn(b.id)}>Return</button>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

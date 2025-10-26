@@ -119,6 +119,9 @@ export const Listing = () => {
                   </div>
                   <div className="text-sm text-gray-500 mb-2 capitalize">{v.type || 'vehicle'}</div>
                   {v.pricePerHour !== undefined && (
+                    <div className="text-xs text-gray-500">{Number((v.pricePerHour||0)*24).toLocaleString('vi-VN')} \u0111/ng\u00E0y</div>
+                  )}
+                  {v.pricePerHour !== undefined && (
                     <div className="text-sm font-semibold">{v.pricePerHour} đ/giờ</div>
                   )}
                 </div>

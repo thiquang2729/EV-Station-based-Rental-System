@@ -1,5 +1,5 @@
 // Load .env when running outside Docker (local dev convenience)
-try { require('./utils/loadEnv').loadEnvIfPresent(); } catch {}
+try { require('./utils/loadEnv').loadEnvIfPresent(); } catch { }
 const app = require('./app');
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`fleet-svc (CJS) listening on :${PORT}`));

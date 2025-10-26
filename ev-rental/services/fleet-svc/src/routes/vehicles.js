@@ -38,35 +38,6 @@ r.get('/:id', async (req, res) => {
 });
 
 /**
- * Update vehicle fields
- * PUT /api/v1/vehicles/:id
- */
-r.put('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, stationId, type, plate, pricePerHour, isAvailable, batteryLevel, healthStatus, imageUrl } = req.body || {};
-    const updated = await prisma.vehicle.update({
-      where: { id: isNaN(id) ? id : Number(id) },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(stationId !== undefined && { stationId }),
-        ...(type !== undefined && { type }),
-        ...(plate !== undefined && { plate }),
-        ...(pricePerHour !== undefined && { pricePerHour }),
-        ...(isAvailable !== undefined && { isAvailable }),
-        ...(batteryLevel !== undefined && { batteryLevel }),
-        ...(healthStatus !== undefined && { healthStatus }),
-        ...(imageUrl !== undefined && { imageUrl }),
-      }
-    });
-    res.json({ success: true, message: 'Vehicle updated', data: updated });
-  } catch (err) {
-    console.error('Error updating vehicle:', err);
-    res.status(500).json({ success: false, error: 'Internal server error' });
-  }
-});
-
-/**
  * ⚙️ Cập nhật trạng thái hoặc thông tin xe
  * PUT /api/v1/vehicles/:id/status
  */
@@ -98,25 +69,25 @@ r.put('/:id/status', async (req, res) => {
  */
 r.post('/', async (req, res) => {
   try {
-    const { 
-      id, 
-      name, 
-      stationId,  // ✅ thêm stationId
-      plate, 
-      type, 
-      status, 
-      isAvailable, 
-      batteryLevel, 
+    const {
+      id,
+      name,
+      stationId,
+      plate,
+      type,
+      status,
+      isAvailable,
+      batteryLevel,
       healthStatus,
-      pricePerHour // ✅ thêm giá thuê
+      pricePerHour,(!id || !stationId || !type || !plate || (pricePerHour === undefined && pricePerDay === undefined))n      pricePerDay
     } = req.body;
     const imageUrl = req.body.imageUrl;
 
     // ⚠️ Kiểm tra thông tin bắt buộc
     if (!id || !stationId || !type || !plate || !pricePerHour) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Thiếu thông tin bắt buộc (id, stationId, type, plate, pricePerHour)' 
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields (id, stationId, type, plate, pricePerDay)'
       });
     }
 
@@ -128,12 +99,11 @@ r.post('/', async (req, res) => {
         stationId,
         type,
         plate,
-        
+
         isAvailable: isAvailable ?? true,
         batteryLevel: batteryLevel ?? 100,
         healthStatus: healthStatus || "GOOD",
-        pricePerHour,
-        imageUrl: imageUrl || null
+        (Math.max(0, Math.round((Number(pricePerDay ?? pricePerHour)) / 24))),\n        imageUrl: imageUrl || null
       },
     });
 
@@ -144,27 +114,13 @@ r.post('/', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ Lỗi khi thêm xe:', err);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error', 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: err.message
     });
   }
 });
 
-/**
- * Delete vehicle
- * DELETE /api/v1/vehicles/:id
- */
-r.delete('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    await prisma.vehicle.delete({ where: { id: isNaN(id) ? id : Number(id) } });
-    res.json({ success: true, message: 'Vehicle deleted' });
-  } catch (err) {
-    console.error('Error deleting vehicle:', err);
-    res.status(500).json({ success: false, error: 'Internal server error' });
-  }
-});
-
 module.exports = r;
+

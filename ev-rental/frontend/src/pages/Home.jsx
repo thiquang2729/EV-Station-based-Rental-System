@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { listFleetVehicles } from '../api/fleet';
 import LocationPicker from '../components/LocationPicker';
-import { getStation, createBooking } from '../api/rental';
+import { getStation } from '../api/rental';
 // Removed old rental API placeholder; we now use fleet API directly
 
 const BrandRow = () => {
@@ -84,63 +84,6 @@ const CategoryCards = ({ onSelectType }) => {
   );
 };
 
-function formatVND(n) {
-  try { return Number(n || 0).toLocaleString('vi-VN') + ' đ/giờ'; } catch { return `${n} đ/giờ`; }
-}
-
-const BookingInline = ({ v }) => {
-  const [open, setOpen] = useState(false);
-  const [start, setStart] = useState(() => {
-    const d = new Date(); d.setMinutes(0,0,0); return d; });
-  const [end, setEnd] = useState(() => {
-    const d = new Date(); d.setHours(d.getHours()+1,0,0,0); return d; });
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState('');
-  const hours = useMemo(() => {
-    const ms = Math.max(0, end - start); return Math.max(1, Math.ceil(ms/3600000));
-  }, [start, end]);
-  const est = (Number(v.pricePerHour||0) * hours);
-
-  function toInput(d){
-    const pad=(n)=>String(n).padStart(2,'0');
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
-
-  const doBook = async (e) => {
-    e.stopPropagation();
-    setBusy(true); setMsg('');
-    try {
-      const payload = { vehicleId: String(v.id), startTime: new Date(start).toISOString(), estDurationH: hours, userId: 'dev-user' };
-      const res = await createBooking(payload); const data = res?.data ?? res;
-      setMsg(`Đã đặt. Mã: ${data?.id || 'N/A'} - Tạm tính ${est.toLocaleString('vi-VN')} đ`);
-    } catch (err) { setMsg(err.message || 'Đặt thất bại'); }
-    finally { setBusy(false); }
-  };
-
-  return (
-    <div className="mt-3" onClick={(e)=>e.stopPropagation()}>
-      <button type="button" className="btn-outline text-sm" onClick={(e)=>{ e.stopPropagation(); setOpen(o=>!o); }}>
-        {open ? 'Đóng' : 'Đặt xe'}
-      </button>
-      {open && (
-        <div className="mt-3 grid grid-cols-1 gap-2 text-sm">
-          <label> Bắt đầu
-            <input type="datetime-local" className="border p-2 rounded w-full" value={toInput(start)} onChange={(e)=>{ const d=new Date(e.target.value); if(!isNaN(d)) setStart(d); }} />
-          </label>
-          <label> Kết thúc
-            <input type="datetime-local" className="border p-2 rounded w-full" value={toInput(end)} onChange={(e)=>{ const d=new Date(e.target.value); if(!isNaN(d)) setEnd(d); }} />
-          </label>
-          <div>Ước tính: <span className="font-semibold">{hours} giờ</span> • <span className="font-semibold">{est.toLocaleString('vi-VN')} đ</span></div>
-          <div>
-            <button disabled={!v.isAvailable || busy} className="btn-soild" onClick={doBook}>{busy? 'Đang đặt...' : 'Xác nhận đặt'}</button>
-          </div>
-          {msg && <div className="text-gray-600">{msg}</div>}
-        </div>
-      )}
-    </div>
-  );
-};
-
 const SearchBar = ({ stationId, setStationId, onSearch, searching }) => {
   return (
     <div className="max-w-3xl w-full bg-white rounded-full shadow-xl ring-1 ring-slate-900/10 overflow-visible">
@@ -198,7 +141,6 @@ const VehicleFooter = () => {
                 {v.pricePerHour !== undefined && (
                   <div className="mt-2 font-semibold">{Number(v.pricePerHour).toLocaleString('vi-VN')} d/gi?</div>
                 )}
-                <BookingInline v={v} />
               </div>
             </div>
           ))}
@@ -231,9 +173,8 @@ const VehiclesResult = ({ items = [], loading, error, stationName, title }) => {
                   <div className="text-sm text-gray-500 mb-1">{v.type || 'Vehicle'}</div>
                   <div className="text-sm">{v.isAvailable ? 'Sẵn sàng' : 'Không sẵn sàng'}</div>
                   {v.pricePerHour !== undefined && (
-                  <div className="mt-2 font-semibold">{Number(v.pricePerHour).toLocaleString('vi-VN')} d/gi?</div>
+                  <div className="mt-2 font-semibold">{Number((v.pricePerHour||0)*24).toLocaleString('vi-VN')} \u0111/ng\u00E0y</div>
                   )}
-                  <BookingInline v={v} />
                 </div>
               </div>
             ))}
