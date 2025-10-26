@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { listFleetVehicles } from '../api/fleet';
 import { listStations } from '../api/rental';
 
 export const Listing = () => {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -133,3 +134,5 @@ export const Listing = () => {
 };
 
 export default Listing;
+
+

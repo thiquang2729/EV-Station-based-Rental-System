@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Listing from './pages/Listing';
+import VehicleList from './pages/VehicleList';
 import CarDetails from './pages/CarDetails';
 import Blog from './pages/Blog';
 import Contact from './pages/Contact';
@@ -22,6 +23,8 @@ const App = () => {
 
         <Route path="/listing" element={<Listing />} />
         <Route path="/listing/:id" element={<CarDetails />} />
+        <Route path="/vehicles" element={<VehicleList />} />
+        <Route path="/vehicles/:id" element={<CarDetails />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/my-bookings" element={<MyBookings />} />
