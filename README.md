@@ -1,343 +1,154 @@
-# Kong API Gateway - EV Rental Microservices
+# EV Station Rental Auth Stack
 
-Hệ thống microservices sử dụng Kong API Gateway để quản lý và load balance các services.
+This repository hosts the authentication service, MySQL database, and React UI that power the EV Station Rental system. The stack previously shipped with Kong Gateway and an HTTPS reverse proxy, but those services were removed so you can integrate your own gateway or ingress solution.
 
-## 🏗️ Architecture
+## Services
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Kong Gateway  │    │   Auth Service  │
-│   (React)       │◄──►│   (Port 8000)  │◄──►│   (Port 8003)   │
-│   (HTTPS:443)   │    │                 │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                                ▼
-                       ┌─────────────────┐
-                       │ Station Service │
-                       │ (Remote, 3 Ports)│
-                       │ 3001, 3002, 3003│
-                       └─────────────────┘
-```
+- **auth-backend** - Node.js API exposing authentication and station aggregation endpoints on port `8000` (published as `http://localhost:8003`).
+- **frontend-build** - Builds the React SPA and serves the static bundle via Nginx on `http://localhost:8080`. The API base URL is injected at build time with `VITE_API_BASE_URL`.
+- **mysql** - MySQL 8.0 database that stores auth data (published on `localhost:3306`) and persists to the `mysql_data` volume.
 
-## 🚀 Quick Start
+> **Manual gateway** - If you want traffic to flow through Kong, Traefik, or another gateway, provision it separately. The repository no longer includes the bundled Kong configuration or helper scripts; reuse assets from your infrastructure code or an earlier revision if needed.
 
-### 1. Prerequisites
+## Quick Start
 
-- Docker & Docker Compose
-- Node.js 18+ (for development)
-- OpenSSL (for SSL certificates)
-
-### 2. Setup
-
-```bash
-# Clone repository
-git clone <your-repo>
+```powershell
 cd EV-Station-based-Rental-System
-
-# Copy environment variables
-cp env.example .env
-# Edit .env with your production values
-
-# Generate SSL certificates
-chmod +x nginx/ssl/generate-ssl.sh
-./nginx/ssl/generate-ssl.sh
-
-# Deploy system
-chmod +x scripts/deploy.sh
-./scripts/deploy.sh
+docker compose up --build
 ```
 
-### 3. Access Services
+- Frontend: http://localhost:8080
+- Auth API: http://localhost:8003/api/v1
+- MySQL: localhost:3306 (user: `root`, password from `MYSQL_ROOT_PASSWORD`)
 
-- **Frontend**: https://localhost
-- **Kong Manager**: http://localhost:8002
-- **Kong Admin API**: http://localhost:8001
-- **Auth Service**: http://localhost:8003
+Bring the stack down when finished:
 
-## 🔧 Configuration
-
-### Environment Variables
-
-```bash
-# Database
-MYSQL_ROOT_PASSWORD=your_secure_mysql_password
-KONG_DB_PASSWORD=your_secure_kong_password
-
-# JWT
-JWT_SECRET=your_very_secure_jwt_secret_key
-
-# Station Service Hosts
-STATION_HOST_1=192.168.1.100
-STATION_HOST_2=192.168.1.100
-STATION_HOST_3=192.168.1.100
-
-# Client URLs
-CLIENT_URL=http://localhost:3000,http://localhost:5173,https://localhost
+```powershell
+docker compose down
 ```
 
-### Kong Services
+Add `-v` if you want to drop the persistent MySQL volume.
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| auth-service | http://auth-backend:8000 | Authentication service |
-| station-service-3001 | http://192.168.1.100:3001 | Station service port 1 |
-| station-service-3002 | http://192.168.1.100:3002 | Station service port 2 |
-| station-service-3003 | http://192.168.1.100:3003 | Station service port 3 |
+## Environment Configuration
 
-### Kong Routes
+`docker-compose.yml` reads values from your shell environment. Common overrides:
 
-| Route | Service | Description |
-|-------|---------|-------------|
-| `/api/v1/auth/*` | auth-service | Authentication endpoints |
-| `/api/v1/stations` | station-service-* | Load balanced station API |
-| `/api/v1/stations/port1/*` | station-service-3001 | Direct port 1 access |
-| `/api/v1/stations/port2/*` | station-service-3002 | Direct port 2 access |
-| `/api/v1/stations/port3/*` | station-service-3003 | Direct port 3 access |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `MYSQL_ROOT_PASSWORD` | Root password for MySQL | `root` |
+| `MYSQL_DATABASE` | Auth DB name | `authdb` |
+| `JWT_SECRET` | HS256 secret used by the auth service | `your_production_jwt_secret` |
+| `CLIENT_URL` | Comma-separated list of allowed origins for CORS | `http://localhost:3000,http://localhost:5173` |
+| `VITE_API_BASE_URL` | API URL baked into the frontend bundle | `http://localhost:8003` |
 
-## 🔐 Security Features
+Store overrides in an `.env` file next to `docker-compose.yml`, or export them before running Compose.
 
-### JWT Authentication
-- All API endpoints require JWT token
-- Token validation via Kong JWT plugin
-- Automatic token refresh handling
+> **Backend env file** - The compose stack now also loads `AuthService/backend/.env` for the `mysql` and `auth-backend` services. Values in that file are applied first, then the overrides above ensure container-friendly defaults (for example `MYSQL_HOST=mysql`). Update the backend `.env` if you want Compose to pick up new secrets or database settings.
 
-### Rate Limiting
-- API rate limiting: 1000 requests/minute
-- Login rate limiting: 5 requests/minute
-- Per-IP rate limiting
+### Choosing the API Base URL
 
-### SSL/TLS
-- HTTPS encryption for all traffic
-- Self-signed certificates for development
-- Production-ready SSL configuration
+- **Direct backend access** - Leave `VITE_API_BASE_URL` at `http://localhost:8003` to call the auth service directly.
+- **External gateway** - Point `VITE_API_BASE_URL` to your gateway (for example `http://localhost:8000`) and configure that gateway to proxy requests to the auth service and any station services you expose.
 
-### CORS
-- Cross-origin resource sharing enabled
-- Configurable allowed origins
-- Preflight request handling
+## Auth Service Details
 
-## 📊 Monitoring
+### Directory Layout
 
-### Health Checks
+- `backend/` - Express + MySQL auth API. Contains route handlers, data models, and environment defaults (`.env.docker`).
+- `frontend/auth-ui/` - Vite-based React SPA. The Dockerfile builds the bundle and serves it with Nginx inside the container.
+- `.env` - Sample front-end build overrides. The main Compose file reads environment variables from the repository root, not from here.
 
-```bash
-# Check all services
-./scripts/monitoring.sh
+### Backend Quick Start
 
-# Check Kong status
-curl http://localhost:8001/status
-
-# Check Kong health
-curl http://localhost:8001/health
+```powershell
+cd AuthService/backend
+cp .env.docker .env
+# adjust values as needed (database, JWT secrets, station endpoints)
+npm install
+npm run dev
 ```
 
-### Logs
+By default the backend listens on port `8000`. Update the `.env` file (or container environment) to point at your MySQL instance and station service endpoints.
 
-```bash
-# View all logs
-docker compose logs -f
+#### Key Environment Variables
 
-# View specific service logs
-docker compose logs -f kong
-docker compose logs -f nginx
-docker compose logs -f auth-backend
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_DATABASE` / `MYSQL_USER` / `MYSQL_PASSWORD` | Database connection | `auth-db:3306`, `xdhdt`, `root`, `root` |
+| `JWT_ACCESS_KEY` / `JWT_REFRESH_KEY` | Secrets for signing tokens | Pre-generated sample values - **replace in production** |
+| `CLIENT_URL` | Comma-separated allowed origins | `http://localhost:5173` (or Compose override) |
+| `STATION_PROXY_TARGETS` | Optional comma-separated upstream URLs | Unset (falls back to `STATION_FALLBACK_URL`) |
+| `STATION_FALLBACK_URL` | Direct URL when no targets resolve | `http://localhost:3002/api/v1/stations` |
+
+The backend forwards station requests to each `STATION_PROXY_TARGETS` entry in order until one responds successfully. When you operate without a gateway, point these variables directly at your station services (for example `http://192.168.1.101:3001/api/v1/stations`). When you reintroduce a gateway, set the targets to that gateway's endpoints instead.
+
+### Frontend Quick Start
+
+```powershell
+cd AuthService/frontend/auth-ui
+npm install
+npm run dev
 ```
 
-### Metrics
+The SPA looks for its API base URL in this order: `?apiBaseUrl=` query string override, `localStorage`, environment variables (`VITE_API_BASE_URL`, `VITE_API_URL`, `VITE_BACKEND_URL`, `VITE_APP_API`), then the current browser origin. During Docker builds, the Compose file injects `VITE_API_BASE_URL` (defaults to `http://localhost:8003` to match the published backend port).
 
-- Kong Manager: http://localhost:8002
-- Kong Admin API: http://localhost:8001
-- Service health endpoints
-- Load balancing statistics
+### Production Build
 
-## 🛠️ Management
-
-### Kong Manager
-- Web UI: http://localhost:8002
-- Manage services, routes, plugins
-- Monitor performance and health
-- Configure authentication
-
-### Kong Admin API
-- REST API: http://localhost:8001
-- Programmatic configuration
-- Service management
-- Plugin configuration
-
-### Scripts
-
-```bash
-# Deploy system
-./scripts/deploy.sh
-
-# Monitor services
-./scripts/monitoring.sh
-
-# Backup configuration
-./scripts/backup.sh
-
-# Setup Kong services
-./scripts/kong-production-setup.sh
-
-# Setup JWT authentication
-./scripts/kong-jwt-setup.sh
+```powershell
+docker build -t auth-frontend ./AuthService/frontend/auth-ui
+docker run --rm -p 8080:80 auth-frontend
 ```
 
-## 🔄 Load Balancing
+Set `VITE_API_BASE_URL` at build time to point the bundled SPA at your chosen gateway or directly at the auth backend:
 
-### Round Robin
-- Default load balancing algorithm
-- Distributes requests across all healthy services
-- Automatic failover to healthy services
+```powershell
+docker build --build-arg VITE_API_BASE_URL=http://your-gateway.example.com -t auth-frontend ./AuthService/frontend/auth-ui
+```
 
-### Health Checks
-- Active health checks every 30 seconds
-- Automatic service discovery
-- Unhealthy service removal
+### Frontend Template Notes
 
-### Service Discovery
-- Automatic service registration
-- Dynamic service updates
-- Health-based routing
+- The React SPA started from the standard Vite + React template, so hot-module reloading and the default ESLint rules from that template are already in place.
+- You can choose either `@vitejs/plugin-react` (Babel/oxc) or `@vitejs/plugin-react-swc` for Fast Refresh. Swap plugins in `vite.config.js` if you prefer the SWC variant.
+- The new React Compiler is disabled by default to keep dev and build times predictable. Follow the [official guide](https://react.dev/learn/react-compiler/installation) if you want to enable it.
+- For production-grade linting, consider migrating to the TypeScript-aware configuration documented in the [create-vite React + TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts).
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
-#### Kong Gateway Not Starting
-```bash
-# Check Kong logs
-docker compose logs kong
+| Issue | Steps |
+|-------|-------|
+| Containers fail to build | Run `docker compose build --no-cache` and review the logs. Ensure Node.js packages install correctly. |
+| Auth service unhealthy | Check logs with `docker compose logs auth-backend`. Verify MySQL is reachable and `JWT_SECRET` is set. |
+| Frontend cannot reach API | Confirm `VITE_API_BASE_URL` matches the accessible URL (backend direct or gateway). Look for CORS errors in the browser console. |
+| Reset MySQL data | `docker compose down -v` removes the persistent `mysql_data` volume. |
 
-# Check Kong database
-docker compose logs kong-db
+### Diagnostic Commands
 
-# Restart Kong
-docker compose restart kong
-```
+- `docker compose ps` - Container state overview.
+- `docker compose logs -f` - Tail all service logs.
+- `docker compose logs auth-backend` - Inspect backend-specific output.
+- `docker compose logs mysql` - Check database startup and permission errors.
+- `docker compose logs frontend-build` - Confirm the bundle served successfully.
+- `docker stats` - Live container resource usage.
 
-#### SSL Certificate Issues
-```bash
-# Regenerate certificates
-./nginx/ssl/generate-ssl.sh
+### Legacy Kong Reference
 
-# Check certificate validity
-openssl x509 -in nginx/ssl/cert.pem -text -noout
-```
+Teams that still rely on Kong should restore the removed assets (`AuthService/kong`, `AuthService/scripts`, `AuthService/nginx`, `AuthService/stubs`, `mysql-init`) from an earlier commit or infrastructure repository. The deprecated troubleshooting playbooks included commands such as:
 
-#### Service Connection Issues
-```bash
-# Check service health
-curl http://localhost:8001/health
+- `curl http://localhost:8001/status` - Kong status.
+- `./scripts/kong-production-setup.sh` - Push declarative config.
+- `./scripts/kong-jwt-setup.sh` - Re-sync JWT credentials.
 
-# Check service configuration
-curl http://localhost:8001/services
+Those scripts no longer ship with the project, so adjust the commands to match your restored setup.
 
-# Check routes
-curl http://localhost:8001/routes
-```
+## Next Steps
 
-#### Authentication Issues
-```bash
-# Check JWT plugin
-curl http://localhost:8001/plugins
+1. Stand up your preferred gateway (Kong, Traefik, API Gateway, etc.) and proxy traffic to the auth service and remote station services.
+2. Update `VITE_API_BASE_URL` so the frontend targets the new gateway endpoint.
+3. Re-run `docker compose up --build` to bake the new base URL into the frontend bundle.
+4. If you continue using Kong, apply your own gateway configuration against the external instance by adapting the last revision of this repository that still contained `AuthService/kong`.
 
-# Check consumers
-curl http://localhost:8001/consumers
+## License
 
-# Test authentication
-curl -H "Authorization: Bearer <token>" http://localhost:8000/api/v1/stations/
-```
-
-### Performance Issues
-
-#### High Memory Usage
-```bash
-# Check container resources
-docker stats
-
-# Restart services
-docker compose restart
-```
-
-#### Slow Response Times
-```bash
-# Check Kong metrics
-curl http://localhost:8001/status
-
-# Check service health
-curl http://localhost:8001/health
-```
-
-## 📈 Scaling
-
-### Horizontal Scaling
-- Add more Station Service instances
-- Configure additional Kong services
-- Update load balancing configuration
-
-### Vertical Scaling
-- Increase container resources
-- Optimize Kong configuration
-- Tune database settings
-
-## 🔒 Security Best Practices
-
-### Production Deployment
-1. Use strong passwords for all services
-2. Generate proper SSL certificates from CA
-3. Configure firewall rules
-4. Enable audit logging
-5. Regular security updates
-
-### JWT Security
-1. Use strong JWT secrets
-2. Implement token expiration
-3. Use HTTPS for all communications
-4. Regular token rotation
-
-### Network Security
-1. Use private networks for internal communication
-2. Implement proper firewall rules
-3. Monitor network traffic
-4. Use VPN for remote access
-
-## 📚 API Documentation
-
-### Authentication Endpoints
-- `POST /api/v1/auth/login` - User login
-- `POST /api/v1/auth/register` - User registration
-- `POST /api/v1/auth/logout` - User logout
-- `GET /api/v1/auth/profile` - Get user profile
-
-### Station Endpoints
-- `GET /api/v1/stations/` - Get all stations (load balanced)
-- `GET /api/v1/stations/{id}` - Get station by ID
-- `GET /api/v1/stations/port1/` - Get stations from port 1
-- `GET /api/v1/stations/port2/` - Get stations from port 2
-- `GET /api/v1/stations/port3/` - Get stations from port 3
-
-### Health Endpoints
-- `GET /healthz` - Nginx health check
-- `GET /kong-health` - Kong health check
-- `GET /api/v1/health` - Auth service health
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🆘 Support
-
-For support and questions:
-- Check the troubleshooting section
-- Review Kong documentation
-- Check service logs
-- Contact the development team
+MIT License - see `LICENSE` in the repository root.
