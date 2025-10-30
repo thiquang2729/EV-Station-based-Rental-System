@@ -17,7 +17,7 @@ const rawOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(",").map((origin) => origin.trim()).filter(Boolean)
   : [];
 
-const whitelist = rawOrigins.length > 0 ? rawOrigins : ["http://localhost:5173", "http://127.0.0.1:5173"];
+const whitelist = rawOrigins.length > 0 ? rawOrigins : ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:8060", "http://127.0.0.1:8060"];
 
 const corsOptions = {
   origin(origin, callback) {

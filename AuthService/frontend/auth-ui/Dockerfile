@@ -12,9 +12,9 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 RUN npm run build
 
-FROM nginx:1.27-alpine
+# Install serve globally
+RUN npm install -g serve
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 3000
 
-EXPOSE 80
+CMD ["serve", "-s", "dist", "-l", "3000"]

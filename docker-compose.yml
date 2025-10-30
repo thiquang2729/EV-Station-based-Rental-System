@@ -20,6 +20,7 @@ services:
       retries: 10
     networks:
       - app-network
+      - ev-rental-network
     restart: unless-stopped
 
   # Auth Backend Service
@@ -35,7 +36,7 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-authdb}
       MYSQL_USER: ${MYSQL_USER:-root}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
-      CLIENT_URL: http://localhost:3000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080,https://localhost,https://yourdomain.com
+      CLIENT_URL: http://localhost:3000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080,https://localhost,https://yourdomain.com,http://localhost:8060,http://127.0.0.1:8060
     depends_on:
       mysql:
         condition: service_healthy
@@ -48,6 +49,7 @@ services:
       retries: 5
     networks:
       - app-network
+      - ev-rental-network
     restart: unless-stopped
 
   # Frontend Build
@@ -56,9 +58,9 @@ services:
       context: ./AuthService/frontend/auth-ui
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8003}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:9080}
     ports:
-      - "8080:80"
+      - "8060:3000"
     depends_on:
       - auth-backend
     networks:
@@ -70,3 +72,6 @@ volumes:
 networks:
   app-network:
     driver: bridge
+  ev-rental-network:  # ← Thêm shared network
+    external: true
+    name: ev-rental-network
