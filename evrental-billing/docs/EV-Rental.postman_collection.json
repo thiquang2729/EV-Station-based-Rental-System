@@ -1,0 +1,125 @@
+{
+  "info": {
+    "name": "EV-Rental Billing",
+    "_postman_id": "evrental-billing-collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Payment Intent (VNPAY)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{JWT}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "http://localhost/api/v1/payments/intents",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"renterId\": \"{{renterId}}\",\n  \"stationId\": \"{{stationId}}\",\n  \"type\": \"RENTAL_FEE\",\n  \"method\": \"VNPAY\",\n  \"amount\": 150000\n}"
+        }
+      }
+    },
+    {
+      "name": "Get Payment By Id",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Authorization", "value": "Bearer {{JWT}}" } ],
+        "url": "http://localhost/api/v1/payments/{{paymentId}}"
+      }
+    },
+    {
+      "name": "POS Collect (CASH)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{JWT}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "http://localhost/api/v1/pos/collect",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"renterId\": \"{{renterId}}\",\n  \"stationId\": \"{{stationId}}\",\n  \"type\": \"RENTAL_FEE\",\n  \"method\": \"CASH\",\n  \"amount\": 120000\n}"
+        }
+      }
+    },
+    {
+      "name": "Deposit Hold",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{JWT}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "http://localhost/api/v1/deposits/hold",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"renterId\": \"{{renterId}}\",\n  \"stationId\": \"{{stationId}}\",\n  \"amount\": 500000,\n  \"method\": \"CARD\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Deposit Release",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{JWT}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "http://localhost/api/v1/deposits/{{depositId}}/release",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amountRelease\": 500000\n}"
+        }
+      }
+    },
+    {
+      "name": "Deposit Forfeit",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{JWT}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "http://localhost/api/v1/deposits/{{depositId}}/forfeit",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 100000\n}"
+        }
+      }
+    },
+    {
+      "name": "Analytics Revenue (day)",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Authorization", "value": "Bearer {{JWT}}" } ],
+        "url": "http://localhost/api/v1/analytics/revenue?stationId={{stationId}}&from=2025-10-01&to=2025-10-31&granularity=day"
+      }
+    },
+    {
+      "name": "Analytics Utilization",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Authorization", "value": "Bearer {{JWT}}" } ],
+        "url": "http://localhost/api/v1/analytics/utilization?stationId={{stationId}}&from=2025-10-01&to=2025-10-31"
+      }
+    },
+    {
+      "name": "Analytics Peak Hours",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Authorization", "value": "Bearer {{JWT}}" } ],
+        "url": "http://localhost/api/v1/analytics/peak-hours?stationId={{stationId}}&from=2025-10-01&to=2025-10-31"
+      }
+    },
+    {
+      "name": "Reports Stations CSV",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Authorization", "value": "Bearer {{JWT}}" } ],
+        "url": "http://localhost/api/v1/reports/stations?date=2025-10-15&format=csv"
+      }
+    }
+  ]
+}
+

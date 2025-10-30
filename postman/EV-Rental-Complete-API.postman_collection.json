@@ -1,0 +1,1623 @@
+{
+  "info": {
+    "name": "EV Rental Complete API Collection",
+    "description": "Complete API collection for EV Rental System including Booking, Auth, and Billing services",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "key": "kong_gateway",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Auth Service (EV-Station-based-Rental-System)",
+      "description": "Authentication and user management endpoints",
+      "item": [
+        {
+          "name": "Auth Endpoints",
+          "item": [
+            {
+              "name": "Register User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"fullName\": \"John Doe\",\n  \"phone\": \"0123456789\",\n  \"role\": \"RENTER\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/auth/register",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "auth", "register"]
+                }
+              }
+            },
+            {
+              "name": "Login User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/auth/login",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "auth", "login"]
+                }
+              }
+            },
+            {
+              "name": "Refresh Token",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refreshToken\": \"your_refresh_token_here\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/auth/refresh",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "auth", "refresh"]
+                }
+              }
+            },
+            {
+              "name": "Logout",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refreshToken\": \"your_refresh_token_here\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/auth/logout",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "auth", "logout"]
+                }
+              }
+            },
+            {
+              "name": "Token Introspect",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/auth/introspect",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "auth", "introspect"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "User Management",
+          "item": [
+            {
+              "name": "Get All Users",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/users",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "users"]
+                }
+              }
+            },
+            {
+              "name": "Get User Stats",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/users/stats",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "users", "stats"]
+                }
+              }
+            },
+            {
+              "name": "Get User Registration Stats",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/users/registration-stats",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "users", "registration-stats"]
+                }
+              }
+            },
+            {
+              "name": "Get User by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/users/:id",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "users", ":id"]
+                }
+              }
+            },
+            {
+              "name": "Update User",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fullName\": \"Updated Name\",\n  \"phone\": \"0987654321\",\n  \"role\": \"STAFF\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/users/:id",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "users", ":id"]
+                }
+              }
+            },
+            {
+              "name": "Update Current User Profile",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fullName\": \"My Updated Name\",\n  \"phone\": \"0987654321\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/users/profile/me",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "users", "profile", "me"]
+                }
+              }
+            },
+            {
+              "name": "Delete User",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/users/:id",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "users", ":id"]
+                }
+              }
+            },
+            {
+              "name": "Verify User Onsite",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"verified\": true,\n  \"notes\": \"User verified with valid ID\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/users/:id/verify-onsite",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "users", ":id", "verify-onsite"]
+                }
+              }
+            },
+            {
+              "name": "Get User Verification Logs",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/users/:id/verification-logs",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "users", ":id", "verification-logs"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Complaints",
+          "item": [
+            {
+              "name": "Create Complaint",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"subject\": \"Vehicle Issue\",\n  \"description\": \"The vehicle has a flat tire\",\n  \"priority\": \"HIGH\",\n  \"category\": \"VEHICLE_ISSUE\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/complaints",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "complaints"]
+                }
+              }
+            },
+            {
+              "name": "Get Complaint Stats",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/complaints/stats",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "complaints", "stats"]
+                }
+              }
+            },
+            {
+              "name": "Get Complaints by Renter ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/complaints/renter/:renterId",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "complaints", "renter", ":renterId"]
+                }
+              }
+            },
+            {
+              "name": "Get All Complaints",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/complaints",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "complaints"]
+                }
+              }
+            },
+            {
+              "name": "Get Complaint by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/complaints/:id",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "complaints", ":id"]
+                }
+              }
+            },
+            {
+              "name": "Update Complaint",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"RESOLVED\",\n  \"resolution\": \"Fixed the tire issue\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/complaints/:id",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "complaints", ":id"]
+                }
+              }
+            },
+            {
+              "name": "Delete Complaint",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/complaints/:id",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "complaints", ":id"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Stations Proxy",
+          "item": [
+            {
+              "name": "Get Stations",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/stations",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "stations"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload",
+          "item": [
+            {
+              "name": "Upload Document",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "document",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}:8003/api/v1/upload/document",
+                  "host": ["{{base_url}}"],
+                  "port": "8003",
+                  "path": ["api", "v1", "upload", "document"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🚗 Booking Services (booking-svc)",
+      "description": "Vehicle booking, fleet management, and rental services",
+      "item": [
+        {
+          "name": "Admin Service",
+          "item": [
+            {
+              "name": "Get Service Info",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}:3001/",
+                  "host": ["{{base_url}}"],
+                  "port": "3001",
+                  "path": [""]
+                }
+              }
+            },
+            {
+              "name": "Get Admin Vehicles",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}:3001/admin/vehicles",
+                  "host": ["{{base_url}}"],
+                  "port": "3001",
+                  "path": ["admin", "vehicles"]
+                }
+              }
+            },
+            {
+              "name": "Get Admin Reports",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}:3001/admin/reports",
+                  "host": ["{{base_url}}"],
+                  "port": "3001",
+                  "path": ["admin", "reports"]
+                }
+              }
+            },
+            {
+              "name": "Update Report Status",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"resolved\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:3001/admin/reports/:id",
+                  "host": ["{{base_url}}"],
+                  "port": "3001",
+                  "path": ["admin", "reports", ":id"]
+                }
+              }
+            },
+            {
+              "name": "Health Check",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}:3001/health",
+                  "host": ["{{base_url}}"],
+                  "port": "3001",
+                  "path": ["health"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fleet Service",
+          "item": [
+            {
+              "name": "Get All Vehicles",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}:3003/api/v1/vehicles",
+                  "host": ["{{base_url}}"],
+                  "port": "3003",
+                  "path": ["api", "v1", "vehicles"]
+                }
+              }
+            },
+            {
+              "name": "Get Vehicle by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}:3003/api/v1/vehicles/:id",
+                  "host": ["{{base_url}}"],
+                  "port": "3003",
+                  "path": ["api", "v1", "vehicles", ":id"]
+                }
+              }
+            },
+            {
+              "name": "Create Vehicle",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": \"VEH001\",\n  \"name\": \"EV Bike A\",\n  \"stationId\": \"ST001\",\n  \"type\": \"BIKE\",\n  \"plate\": \"29A-12345\",\n  \"isAvailable\": true,\n  \"batteryLevel\": 90,\n  \"healthStatus\": \"OK\",\n  \"pricePerHour\": 50000,\n  \"imageUrl\": \"https://example.com/image.jpg\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:3003/api/v1/vehicles",
+                  "host": ["{{base_url}}"],
+                  "port": "3003",
+                  "path": ["api", "v1", "vehicles"]
+                }
+              }
+            },
+            {
+              "name": "Update Vehicle Status",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isAvailable\": false,\n  \"batteryLevel\": 75,\n  \"healthStatus\": \"MAINTENANCE\",\n  \"pricePerHour\": 55000,\n  \"name\": \"Updated EV Bike A\",\n  \"imageUrl\": \"https://example.com/new-image.jpg\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:3003/api/v1/vehicles/:id/status",
+                  "host": ["{{base_url}}"],
+                  "port": "3003",
+                  "path": ["api", "v1", "vehicles", ":id", "status"]
+                }
+              }
+            },
+            {
+              "name": "Get All Incidents",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:3003/api/v1/incidents",
+                  "host": ["{{base_url}}"],
+                  "port": "3003",
+                  "path": ["api", "v1", "incidents"]
+                }
+              }
+            },
+            {
+              "name": "Report Incident",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vehicleId\": \"VEH001\",\n  \"stationId\": \"ST001\",\n  \"reporterId\": \"USER001\",\n  \"severity\": \"HIGH\",\n  \"desc\": \"Flat tire detected\",\n  \"photos\": [\"https://example.com/photo1.jpg\"]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:3003/api/v1/incidents",
+                  "host": ["{{base_url}}"],
+                  "port": "3003",
+                  "path": ["api", "v1", "incidents"]
+                }
+              }
+            },
+            {
+              "name": "Get Fleet Overview",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:3003/api/v1/overview",
+                  "host": ["{{base_url}}"],
+                  "port": "3003",
+                  "path": ["api", "v1", "overview"]
+                }
+              }
+            },
+            {
+              "name": "Presign Upload",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"contentType\": \"image/jpeg\",\n  \"fileName\": \"vehicle-image.jpg\",\n  \"prefix\": \"vehicles\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:3003/api/v1/uploads/presign",
+                  "host": ["{{base_url}}"],
+                  "port": "3003",
+                  "path": ["api", "v1", "uploads", "presign"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rental Service",
+          "item": [
+            {
+              "name": "Get All Stations",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}:3002/api/v1/stations",
+                  "host": ["{{base_url}}"],
+                  "port": "3002",
+                  "path": ["api", "v1", "stations"]
+                }
+              }
+            },
+            {
+              "name": "Get Station by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}:3002/api/v1/stations/:id",
+                  "host": ["{{base_url}}"],
+                  "port": "3002",
+                  "path": ["api", "v1", "stations", ":id"]
+                }
+              }
+            },
+            {
+              "name": "Create Station",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Station Central\",\n  \"address\": \"123 Main Street, District 1\",\n  \"lat\": 10.762622,\n  \"lng\": 106.660172\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:3002/api/v1/stations",
+                  "host": ["{{base_url}}"],
+                  "port": "3002",
+                  "path": ["api", "v1", "stations"]
+                }
+              }
+            },
+            {
+              "name": "Update Station",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Updated Station Name\",\n  \"address\": \"456 New Street, District 2\",\n  \"lat\": 10.800000,\n  \"lng\": 106.700000\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:3002/api/v1/stations/:id",
+                  "host": ["{{base_url}}"],
+                  "port": "3002",
+                  "path": ["api", "v1", "stations", ":id"]
+                }
+              }
+            },
+            {
+              "name": "Delete Station",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}:3002/api/v1/stations/:id",
+                  "host": ["{{base_url}}"],
+                  "port": "3002",
+                  "path": ["api", "v1", "stations", ":id"]
+                }
+              }
+            },
+            {
+              "name": "Get Rental Vehicles",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:3002/api/v1/vehicles?stationId=ST001&available=true",
+                  "host": ["{{base_url}}"],
+                  "port": "3002",
+                  "path": ["api", "v1", "vehicles"],
+                  "query": [
+                    {
+                      "key": "stationId",
+                      "value": "ST001"
+                    },
+                    {
+                      "key": "available",
+                      "value": "true"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Rental Vehicle by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:3002/api/v1/vehicles/:id",
+                  "host": ["{{base_url}}"],
+                  "port": "3002",
+                  "path": ["api", "v1", "vehicles", ":id"]
+                }
+              }
+            },
+            {
+              "name": "Get All Bookings",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}:3002/api/v1/bookings",
+                  "host": ["{{base_url}}"],
+                  "port": "3002",
+                  "path": ["api", "v1", "bookings"]
+                }
+              }
+            },
+            {
+              "name": "Create Booking",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vehicleId\": \"VEH001\",\n  \"stationId\": \"ST001\",\n  \"userId\": \"USER001\",\n  \"startTime\": \"2024-01-15T10:00:00Z\",\n  \"estDurationH\": 2\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:3002/api/v1/bookings",
+                  "host": ["{{base_url}}"],
+                  "port": "3002",
+                  "path": ["api", "v1", "bookings"]
+                }
+              }
+            },
+            {
+              "name": "Return Vehicle",
+              "request": {
+                "method": "PATCH",
+                "url": {
+                  "raw": "{{base_url}}:3002/api/v1/bookings/:id/return",
+                  "host": ["{{base_url}}"],
+                  "port": "3002",
+                  "path": ["api", "v1", "bookings", ":id", "return"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "💰 Billing Services (evrental-billing)",
+      "description": "Payment processing, analytics, and financial services",
+      "item": [
+        {
+          "name": "Payment Service",
+          "item": [
+            {
+              "name": "Create Payment Intent",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bookingId\": \"BOOKING001\",\n  \"renterId\": \"USER001\",\n  \"stationId\": \"ST001\",\n  \"amount\": 100000,\n  \"method\": \"VNPAY\",\n  \"type\": \"RENTAL_FEE\",\n  \"description\": \"Payment for 2-hour rental\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8082/api/v1/payments/intents",
+                  "host": ["{{base_url}}"],
+                  "port": "8082",
+                  "path": ["api", "v1", "payments", "intents"]
+                }
+              }
+            },
+            {
+              "name": "Get Payment by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8082/api/v1/payments/:id",
+                  "host": ["{{base_url}}"],
+                  "port": "8082",
+                  "path": ["api", "v1", "payments", ":id"]
+                }
+              }
+            },
+            {
+              "name": "Cancel Payment",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8082/api/v1/payments/:id/cancel",
+                  "host": ["{{base_url}}"],
+                  "port": "8082",
+                  "path": ["api", "v1", "payments", ":id", "cancel"]
+                }
+              }
+            },
+            {
+              "name": "Refund Payment",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 50000\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8082/api/v1/payments/:id/refund",
+                  "host": ["{{base_url}}"],
+                  "port": "8082",
+                  "path": ["api", "v1", "payments", ":id", "refund"]
+                }
+              }
+            },
+            {
+              "name": "Query Payments",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8082/api/v1/payments?bookingId=BOOKING001&status=COMPLETED&limit=10&offset=0",
+                  "host": ["{{base_url}}"],
+                  "port": "8082",
+                  "path": ["api", "v1", "payments"],
+                  "query": [
+                    {
+                      "key": "bookingId",
+                      "value": "BOOKING001"
+                    },
+                    {
+                      "key": "status",
+                      "value": "COMPLETED"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Hold Deposit",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bookingId\": \"BOOKING001\",\n  \"renterId\": \"USER001\",\n  \"stationId\": \"ST001\",\n  \"amount\": 200000,\n  \"method\": \"VNPAY\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8082/api/v1/deposits/hold",
+                  "host": ["{{base_url}}"],
+                  "port": "8082",
+                  "path": ["api", "v1", "deposits", "hold"]
+                }
+              }
+            },
+            {
+              "name": "Release Deposit",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amountRelease\": 200000\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8082/api/v1/deposits/:id/release",
+                  "host": ["{{base_url}}"],
+                  "port": "8082",
+                  "path": ["api", "v1", "deposits", ":id", "release"]
+                }
+              }
+            },
+            {
+              "name": "Forfeit Deposit",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 100000\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8082/api/v1/deposits/:id/forfeit",
+                  "host": ["{{base_url}}"],
+                  "port": "8082",
+                  "path": ["api", "v1", "deposits", ":id", "forfeit"]
+                }
+              }
+            },
+            {
+              "name": "Collect Payment (POS)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bookingId\": \"BOOKING001\",\n  \"stationId\": \"ST001\",\n  \"amount\": 100000,\n  \"method\": \"CASH\",\n  \"type\": \"RENTAL_FEE\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}:8082/api/v1/pos/collect",
+                  "host": ["{{base_url}}"],
+                  "port": "8082",
+                  "path": ["api", "v1", "pos", "collect"]
+                }
+              }
+            },
+            {
+              "name": "VNPay Return",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}:8082/api/v1/webhooks/return?vnp_Amount=100000&vnp_BankCode=NCB&vnp_BankTranNo=VNP123456789",
+                  "host": ["{{base_url}}"],
+                  "port": "8082",
+                  "path": ["api", "v1", "webhooks", "return"],
+                  "query": [
+                    {
+                      "key": "vnp_Amount",
+                      "value": "100000"
+                    },
+                    {
+                      "key": "vnp_BankCode",
+                      "value": "NCB"
+                    },
+                    {
+                      "key": "vnp_BankTranNo",
+                      "value": "VNP123456789"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "VNPay IPN",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}:8082/api/v1/webhooks/ipn?vnp_Amount=100000&vnp_BankCode=NCB&vnp_BankTranNo=VNP123456789",
+                  "host": ["{{base_url}}"],
+                  "port": "8082",
+                  "path": ["api", "v1", "webhooks", "ipn"],
+                  "query": [
+                    {
+                      "key": "vnp_Amount",
+                      "value": "100000"
+                    },
+                    {
+                      "key": "vnp_BankCode",
+                      "value": "NCB"
+                    },
+                    {
+                      "key": "vnp_BankTranNo",
+                      "value": "VNP123456789"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Analytics Service",
+          "item": [
+            {
+              "name": "Health Check",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}:8083/api/v1/health",
+                  "host": ["{{base_url}}"],
+                  "port": "8083",
+                  "path": ["api", "v1", "health"]
+                }
+              }
+            },
+            {
+              "name": "Get Revenue Analytics",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8083/api/v1/analytics/revenue?stationId=ST001&from=2024-01-01&to=2024-01-31&granularity=day",
+                  "host": ["{{base_url}}"],
+                  "port": "8083",
+                  "path": ["api", "v1", "analytics", "revenue"],
+                  "query": [
+                    {
+                      "key": "stationId",
+                      "value": "ST001"
+                    },
+                    {
+                      "key": "from",
+                      "value": "2024-01-01"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2024-01-31"
+                    },
+                    {
+                      "key": "granularity",
+                      "value": "day"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Utilization Analytics",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8083/api/v1/analytics/utilization?stationId=ST001&from=2024-01-01&to=2024-01-31&granularity=day",
+                  "host": ["{{base_url}}"],
+                  "port": "8083",
+                  "path": ["api", "v1", "analytics", "utilization"],
+                  "query": [
+                    {
+                      "key": "stationId",
+                      "value": "ST001"
+                    },
+                    {
+                      "key": "from",
+                      "value": "2024-01-01"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2024-01-31"
+                    },
+                    {
+                      "key": "granularity",
+                      "value": "day"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Peak Hours Analytics",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8083/api/v1/analytics/peak-hours?stationId=ST001&from=2024-01-01&to=2024-01-31&granularity=day",
+                  "host": ["{{base_url}}"],
+                  "port": "8083",
+                  "path": ["api", "v1", "analytics", "peak-hours"],
+                  "query": [
+                    {
+                      "key": "stationId",
+                      "value": "ST001"
+                    },
+                    {
+                      "key": "from",
+                      "value": "2024-01-01"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2024-01-31"
+                    },
+                    {
+                      "key": "granularity",
+                      "value": "day"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get User Overview",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8083/api/v1/analytics/user/USER001/overview",
+                  "host": ["{{base_url}}"],
+                  "port": "8083",
+                  "path": ["api", "v1", "analytics", "user", "USER001", "overview"]
+                }
+              }
+            },
+            {
+              "name": "Get Demand Forecast",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8083/api/v1/analytics/demand-forecast?stationId=ST001&horizonDays=14",
+                  "host": ["{{base_url}}"],
+                  "port": "8083",
+                  "path": ["api", "v1", "analytics", "demand-forecast"],
+                  "query": [
+                    {
+                      "key": "stationId",
+                      "value": "ST001"
+                    },
+                    {
+                      "key": "horizonDays",
+                      "value": "14"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Stations Report",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}:8083/api/v1/reports/stations?date=2024-01-15&format=json",
+                  "host": ["{{base_url}}"],
+                  "port": "8083",
+                  "path": ["api", "v1", "reports", "stations"],
+                  "query": [
+                    {
+                      "key": "date",
+                      "value": "2024-01-15"
+                    },
+                    {
+                      "key": "format",
+                      "value": "json"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🌐 Kong Gateway Routes",
+      "description": "API calls through Kong Gateway (if configured)",
+      "item": [
+        {
+          "name": "Auth via Kong",
+          "item": [
+            {
+              "name": "Login via Kong",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+                },
+                "url": {
+                  "raw": "{{kong_gateway}}/auth/login",
+                  "host": ["{{kong_gateway}}"],
+                  "path": ["auth", "login"]
+                }
+              }
+            },
+            {
+              "name": "Register via Kong",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"fullName\": \"John Doe\",\n  \"phone\": \"0123456789\",\n  \"role\": \"RENTER\"\n}"
+                },
+                "url": {
+                  "raw": "{{kong_gateway}}/auth/register",
+                  "host": ["{{kong_gateway}}"],
+                  "path": ["auth", "register"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Booking via Kong",
+          "item": [
+            {
+              "name": "Get Stations via Kong",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{kong_gateway}}/booking/rental/stations",
+                  "host": ["{{kong_gateway}}"],
+                  "path": ["booking", "rental", "stations"]
+                }
+              }
+            },
+            {
+              "name": "Get Vehicles via Kong",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{kong_gateway}}/booking/fleet/vehicles",
+                  "host": ["{{kong_gateway}}"],
+                  "path": ["booking", "fleet", "vehicles"]
+                }
+              }
+            },
+            {
+              "name": "Create Booking via Kong",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vehicleId\": \"VEH001\",\n  \"stationId\": \"ST001\",\n  \"userId\": \"USER001\",\n  \"startTime\": \"2024-01-15T10:00:00Z\",\n  \"estDurationH\": 2\n}"
+                },
+                "url": {
+                  "raw": "{{kong_gateway}}/booking/rental/bookings",
+                  "host": ["{{kong_gateway}}"],
+                  "path": ["booking", "rental", "bookings"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Billing via Kong",
+          "item": [
+            {
+              "name": "Create Payment Intent via Kong",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bookingId\": \"BOOKING001\",\n  \"renterId\": \"USER001\",\n  \"stationId\": \"ST001\",\n  \"amount\": 100000,\n  \"method\": \"VNPAY\",\n  \"type\": \"RENTAL_FEE\",\n  \"description\": \"Payment for 2-hour rental\"\n}"
+                },
+                "url": {
+                  "raw": "{{kong_gateway}}/payments/intents",
+                  "host": ["{{kong_gateway}}"],
+                  "path": ["payments", "intents"]
+                }
+              }
+            },
+            {
+              "name": "Get Revenue Analytics via Kong",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{kong_gateway}}/analytics/revenue?stationId=ST001&from=2024-01-01&to=2024-01-31&granularity=day",
+                  "host": ["{{kong_gateway}}"],
+                  "path": ["analytics", "revenue"],
+                  "query": [
+                    {
+                      "key": "stationId",
+                      "value": "ST001"
+                    },
+                    {
+                      "key": "from",
+                      "value": "2024-01-01"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2024-01-31"
+                    },
+                    {
+                      "key": "granularity",
+                      "value": "day"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

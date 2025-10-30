@@ -1,0 +1,637 @@
+{
+  "info": {
+    "_postman_id": "0c36d6dc-49ff-4c76-b765-2f908db8b27c",
+    "name": "EV Rental Platform Services",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "API requests for the Admin, Rental, and Fleet services that power the EV rental platform."
+  },
+  "item": [
+    {
+      "name": "Admin Service",
+      "description": "Endpoints served by admin-svc (port 3001).",
+      "item": [
+        {
+          "name": "Service Overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{admin_base_url}}/",
+              "host": [
+                "{{admin_base_url}}"
+              ],
+              "path": []
+            }
+          }
+        },
+        {
+          "name": "List Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{admin_base_url}}/admin/vehicles",
+              "host": [
+                "{{admin_base_url}}"
+              ],
+              "path": [
+                "admin",
+                "vehicles"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Reports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{admin_base_url}}/admin/reports",
+              "host": [
+                "{{admin_base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Resolve Report",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"resolved\": true\n}"
+            },
+            "url": {
+              "raw": "{{admin_base_url}}/admin/reports/{{report_id}}",
+              "host": [
+                "{{admin_base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "{{report_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{admin_base_url}}/health",
+              "host": [
+                "{{admin_base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rental Service",
+      "description": "Endpoints served by rental-svc (port 3002).",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{rental_base_url}}/health",
+              "host": [
+                "{{rental_base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Stations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{rental_base_url}}/api/v1/stations",
+              "host": [
+                "{{rental_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stations"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Station",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{rental_base_url}}/api/v1/stations/{{station_id}}",
+              "host": [
+                "{{rental_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stations",
+                "{{station_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Station",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Station Central\",\n    \"address\": \"123 Main St, Hanoi\",\n    \"lat\": 21.0278,\n    \"lng\": 105.8342\n}"
+            },
+            "url": {
+              "raw": "{{rental_base_url}}/api/v1/stations",
+              "host": [
+                "{{rental_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stations"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Station",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Station Central Updated\",\n    \"address\": \"456 Updated Ave\",\n    \"lat\": 21.0288,\n    \"lng\": 105.8350\n}"
+            },
+            "url": {
+              "raw": "{{rental_base_url}}/api/v1/stations/{{station_id}}",
+              "host": [
+                "{{rental_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stations",
+                "{{station_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Station",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{rental_base_url}}/api/v1/stations/{{station_id}}",
+              "host": [
+                "{{rental_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "stations",
+                "{{station_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{rental_base_url}}/api/v1/vehicles?stationId={{station_id}}&available={{available}}",
+              "host": [
+                "{{rental_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles"
+              ],
+              "query": [
+                {
+                  "key": "stationId",
+                  "value": "{{station_id}}",
+                  "disabled": true
+                },
+                {
+                  "key": "available",
+                  "value": "{{available}}",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{rental_base_url}}/api/v1/vehicles/{{vehicle_id}}",
+              "host": [
+                "{{rental_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles",
+                "{{vehicle_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{rental_base_url}}/api/v1/bookings",
+              "host": [
+                "{{rental_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"vehicleId\": \"{{vehicle_id}}\",\n    \"userId\": \"{{user_id}}\",\n    \"startTime\": \"2025-10-28T08:00:00.000Z\",\n    \"estDurationH\": 2\n}"
+            },
+            "url": {
+              "raw": "{{rental_base_url}}/api/v1/bookings",
+              "host": [
+                "{{rental_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Return Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{rental_base_url}}/api/v1/bookings/{{booking_id}}/return",
+              "host": [
+                "{{rental_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{booking_id}}",
+                "return"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fleet Service",
+      "description": "Endpoints served by fleet-svc (port 3003).",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{fleet_base_url}}/health",
+              "host": [
+                "{{fleet_base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{fleet_base_url}}/api/v1/vehicles",
+              "host": [
+                "{{fleet_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{fleet_base_url}}/api/v1/vehicles/{{vehicle_id}}",
+              "host": [
+                "{{fleet_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles",
+                "{{vehicle_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Vehicle Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"isAvailable\": false,\n    \"batteryLevel\": 45,\n    \"healthStatus\": \"MAINTENANCE\",\n    \"pricePerHour\": 95000\n}"
+            },
+            "url": {
+              "raw": "{{fleet_base_url}}/api/v1/vehicles/{{vehicle_id}}/status",
+              "host": [
+                "{{fleet_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles",
+                "{{vehicle_id}}",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"id\": \"EV-1001\",\n    \"name\": \"EV Bike Deluxe\",\n    \"stationId\": \"ST-001\",\n    \"plate\": \"29A1-12345\",\n    \"type\": \"BIKE\",\n    \"isAvailable\": true,\n    \"batteryLevel\": 100,\n    \"healthStatus\": \"OK\",\n    \"pricePerHour\": 120000,\n    \"imageUrl\": \"https://example.com/vehicles/ev-1001.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{fleet_base_url}}/api/v1/vehicles",
+              "host": [
+                "{{fleet_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vehicles"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Incidents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{fleet_base_url}}/api/v1/incidents",
+              "host": [
+                "{{fleet_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "incidents"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Incident",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"vehicleId\": \"{{vehicle_id}}\",\n    \"stationId\": \"ST-001\",\n    \"reporterId\": \"staff-01\",\n    \"severity\": \"MEDIUM\",\n    \"desc\": \"Front tire pressure low\",\n    \"photos\": [\n        \"https://example.com/incidents/img1.jpg\"\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{fleet_base_url}}/api/v1/incidents",
+              "host": [
+                "{{fleet_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "incidents"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Station Overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{fleet_base_url}}/api/v1/overview",
+              "host": [
+                "{{fleet_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "overview"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Generate Upload Presign URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"contentType\": \"image/jpeg\",\n    \"prefix\": \"vehicles\",\n    \"fileName\": \"damage-photo.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{fleet_base_url}}/api/v1/uploads/presign",
+              "host": [
+                "{{fleet_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "uploads",
+                "presign"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "admin_base_url",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "rental_base_url",
+      "value": "http://localhost:3002"
+    },
+    {
+      "key": "fleet_base_url",
+      "value": "http://localhost:3003"
+    },
+    {
+      "key": "auth_token",
+      "value": ""
+    },
+    {
+      "key": "station_id",
+      "value": "ST-001"
+    },
+    {
+      "key": "vehicle_id",
+      "value": "EV-1001"
+    },
+    {
+      "key": "booking_id",
+      "value": "BK-1001"
+    },
+    {
+      "key": "report_id",
+      "value": "1"
+    },
+    {
+      "key": "user_id",
+      "value": "dev-user"
+    },
+    {
+      "key": "available",
+      "value": "true"
+    }
+  ]
+}

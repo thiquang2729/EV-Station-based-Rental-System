@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  VNPAY
+}
+
+enum PaymentType {
+  RENTAL_FEE
+  DEPOSIT
+  FINE
+  EXTENSION
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+  CANCELED
+}
+
+enum DepositStatus {
+  HELD
+  RELEASED
+  PARTIAL_FORFEIT
+  FORFEIT
+  CANCELED
+}
+
+model Payment {
+  id              String         @id @default(cuid())
+  bookingId       String
+  renterId        String
+  stationId       String
+  type            PaymentType
+  method          PaymentMethod
+  amount          Int
+  currency        String         @default("VND")
+  status          PaymentStatus  @default(PENDING)
+  description     String?        @db.VarChar(255)
+  vnpTxnRef       String?        @unique
+  vnpBankCode     String?
+  vnpCardType     String?
+  vnpOrderInfo    String?
+  vnpPayDate      DateTime?
+  vnpResponseCode String?
+  vnpSecureHash   String?
+  createdBy       String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  transactions    PaymentTransaction[]
+}
+
+model Deposit {
+  id               String        @id @default(cuid())
+  bookingId        String
+  renterId         String
+  stationId        String
+  amount           Int
+  status           DepositStatus @default(HELD)
+  holdPaymentId    String?
+  releasePaymentId String?
+  note             String?       @db.VarChar(255)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model PaymentTransaction {
+  id         String         @id @default(cuid())
+  paymentId  String
+  payment    Payment        @relation(fields: [paymentId], references: [id])
+  fromStatus PaymentStatus?
+  toStatus   PaymentStatus
+  amount     Int
+  actorId    String?
+  meta       Json?
+  createdAt  DateTime       @default(now())
+  @@index([paymentId])
+}
+
+model IdempotencyKey {
+  key        String   @id
+  scope      String
+  status     String
+  response   Json?
+  createdAt  DateTime @default(now())
+}
+
+model WebhookInbound {
+  id         String   @id @default(cuid())
+  provider   String
+  rawQuery   String
+  verified   Boolean
+  createdAt  DateTime @default(now())
+}

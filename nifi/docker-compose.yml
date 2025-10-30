@@ -1,0 +1,25 @@
+version: '3.9'
+
+services:
+  nifi:
+    build: .
+    container_name: evrental-nifi
+    environment:
+      - NIFI_WEB_HTTPS_PORT=8443
+      - SINGLE_USER_CREDENTIALS_USERNAME=admin
+      - SINGLE_USER_CREDENTIALS_PASSWORD=evrental12345
+      - NIFI_SENSITIVE_PROPS_KEY=evrentalnifi123
+      - NIFI_JVM_HEAP_INIT=512m
+      - NIFI_JVM_HEAP_MAX=2g
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./nifi_data:/opt/nifi/nifi-current/flowfile_repository
+      - ./drivers/mysql-connector-j-8.4.0.jar:/opt/nifi/nifi-current/lib/mysql-connector-j-8.4.0.jar:ro
+    networks:
+      - ev-rental-network
+    restart: unless-stopped
+
+networks:
+  ev-rental-network:
+    external: true
