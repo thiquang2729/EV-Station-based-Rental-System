@@ -1,0 +1,106 @@
+version: '3.9'
+
+services:
+  # 🧱 Database
+  mysql:
+    image: mysql:8.0
+    container_name: ev-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: evrental
+      MYSQL_USER: evuser
+      MYSQL_PASSWORD: evpass
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ev-rental-network
+
+  # 🖥️ Adminer (UI để xem database)
+  adminer:
+    image: adminer
+    container_name: ev-adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+    networks:
+      - ev-rental-network
+
+  # 🧩 Admin Service
+  admin-svc:
+    build: ./services/admin-svc
+    container_name: admin-svc
+    environment:
+      PORT: 3001
+    expose:
+      - 3001
+    networks:
+      - ev-rental-network
+  # 🚗 Rental Service
+  rental-svc:
+    build: ./services/rental-svc
+    container_name: rental-svc
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      PORT: 3002
+      DATABASE_URL: mysql://evuser:evpass@mysql:3306/evrental?authPlugins=mysql_native_password
+      SHADOW_DATABASE_URL: mysql://root:root@mysql:3306/evrental_shadow?authPlugins=mysql_native_password
+      CORS_ORIGIN: "*"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      admin-svc:
+        condition: service_started
+    expose:
+      - 3002
+    networks:
+      - ev-rental-network
+  # 🚙 Fleet Service (nơi upload ảnh lên AWS S3)
+  fleet-svc:
+    build: ./services/fleet-svc
+    container_name: fleet-svc
+    env_file:
+      - ./services/fleet-svc/.env # ⚙️ load key AWS từ đây
+    environment:
+      PORT: 3003
+      DATABASE_URL: mysql://evuser:evpass@mysql:3306/evrental?authPlugins=mysql_native_password
+      SHADOW_DATABASE_URL: mysql://root:root@mysql:3306/evrental_shadow?authPlugins=mysql_native_password
+    depends_on:
+      mysql:
+        condition: service_healthy
+      admin-svc:
+        condition: service_started
+    ports:
+      - "3003:3003"
+    networks:
+      - ev-rental-network
+  # 🌐 Frontend (React/Vite)
+  frontend:
+    build: ./frontend
+    container_name: ev-frontend
+    ports:
+      - "3004:3000"
+    depends_on:
+      - admin-svc
+      - rental-svc
+      - fleet-svc
+    environment:
+      - NODE_ENV=production
+    networks:
+      - ev-rental-network
+
+volumes:
+  dbdata:
+
+networks:
+  ev-rental-network:  # ← Thêm shared network
+    external: true
+    name: ev-rental-network

@@ -1,0 +1,318 @@
+# =============================
+# 🐳 DOCKER
+# =============================
+
+# Docker volumes & temp files
+*.pid
+*.seed
+*.log
+*.pid.lock
+docker-compose.override.yml
+docker-compose.dev.yml
+docker-compose.debug.yml
+
+# Ignore any Docker build cache folders
+tmp/
+.docker/
+docker-data/
+docker-volume/
+volume-data/
+db_data/
+mysql_data/
+pg_data/
+etcd_data/
+nifi_data/
+nifi_conf/
+
+# =============================
+# 🔐 ENVIRONMENT & SECRETS
+# =============================
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.*.local
+*.env
+.envrc
+
+# Secret files
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+.secrets/
+
+# =============================
+# 💻 EDITOR / IDE
+# =============================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA / WebStorm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# =============================
+# 🖥️ OPERATING SYSTEM
+# =============================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+.nfs*
+
+# =============================
+# 📦 NODE.JS / JAVASCRIPT
+# =============================
+
+# Dependencies
+node_modules/
+jspm_packages/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+.nuxt/
+.cache/
+.parcel-cache/
+
+# Testing
+coverage/
+*.lcov
+.nyc_output/
+.jest/
+
+# TypeScript
+*.tsbuildinfo
+.tsbuildinfo
+
+# ESLint
+.eslintcache
+
+# Prettier
+.prettierignore
+
+# =============================
+# 🗄️ DATABASE
+# =============================
+
+# Prisma
+prisma/migrations/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Database dumps
+*.sql
+*.dump
+*.backup
+backups/
+
+# =============================
+# 🔧 BUILD TOOLS
+# =============================
+
+# Webpack
+.webpack/
+
+# Vite
+.vite/
+
+# Rollup
+.rollup.cache/
+
+# Turbo
+.turbo/
+
+# =============================
+# 📝 LOGS & TEMP FILES
+# =============================
+
+# Log files
+*.log
+logs/
+*.log.*
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache
+.tmp/
+temp/
+
+# =============================
+# 📊 MONITORING & ANALYTICS
+# =============================
+
+# APM
+.apm/
+
+# =============================
+# 🚀 DEPLOYMENT
+# =============================
+
+# Deployment files
+.vercel/
+.netlify/
+.serverless/
+.aws-sam/
+
+# =============================
+# 🔒 SECURITY
+# =============================
+
+# SSH keys
+*.pub
+id_rsa
+id_ed25519
+*.ppk
+
+# Certificates
+*.cert
+*.csr
+
+# =============================
+# 📚 DOCUMENTATION
+# =============================
+
+# Generated docs
+docs/_build/
+site/
+
+# =============================
+# 🎨 FRONTEND SPECIFIC
+# =============================
+
+# React
+.react/
+
+# Storybook
+storybook-static/
+
+# =============================
+# 🐍 PYTHON (if any)
+# =============================
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+.pytest_cache/
+
+# =============================
+# ☕ JAVA (if any)
+# =============================
+
+*.class
+*.jar
+*.war
+*.ear
+target/
+.gradle/
+build/
+.mvn/
+mvnw
+mvnw.cmd
+
+# =============================
+# 🦀 RUST (if any)
+# =============================
+
+target/
+Cargo.lock
+**/*.rs.bk
+
+# =============================
+# 🔧 MISCELLANEOUS
+# =============================
+
+# Lock files (uncomment if you want to ignore them)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# History
+.history/
+.vscode-test/
+
+# OS generated files
+.DS_Store?
+ehthumbs_vista.db
+
+# Backup files
+*.orig
+*.rej
+*~
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+

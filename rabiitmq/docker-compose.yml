@@ -1,0 +1,14 @@
+services:
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - ev-rental-network
+
+networks:
+  ev-rental-network:
+    external: true
+    name: ev-rental-network

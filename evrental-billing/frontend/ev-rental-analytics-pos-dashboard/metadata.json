@@ -1,0 +1,5 @@
+{
+  "name": "EV Rental Analytics & POS Dashboard",
+  "description": "A comprehensive dashboard for managing payments and viewing analytics for an EV Rental service. This application provides Point-of-Sale (POS) functionality for staff and detailed data visualizations for revenue, utilization, and demand forecasting.",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,25 @@
+{
+    "name": "fleet-svc",
+    "private": true,
+    "scripts": {
+        "dev": "nodemon src/index.js",
+        "start": "node src/index.js",
+        "prisma:gen": "prisma generate",
+        "migrate": "prisma migrate dev --name init"
+    },
+    "dependencies": {
+        "@aws-sdk/client-s3": "^3.641.0",
+        "@aws-sdk/credential-providers": "^3.916.0",
+        "@aws-sdk/s3-request-presigner": "^3.641.0",
+        "@prisma/client": "^5",
+        "cors": "^2.8.5",
+        "express": "^4.19.2",
+        "jose": "^5.9.3",
+        "jsonwebtoken": "^9.0.2",
+        "morgan": "^1.10.0",
+        "prisma": "^5"
+    },
+    "devDependencies": {
+        "nodemon": "^3.0.1"
+    }
+}

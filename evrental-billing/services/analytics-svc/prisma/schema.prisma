@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model StationStatsDaily {
+  id           String   @id @default(cuid())
+  stationId    String
+  date         DateTime
+  rentalsCount Int
+  revenue      Int
+  utilization  Float
+  peakHours    Json?
+  createdAt    DateTime @default(now())
+  @@unique([stationId, date])
+}
+
+model UserRentalStats {
+  id             String   @id @default(cuid())
+  renterId       String   @unique
+  totalRentals   Int      @default(0)
+  totalSpent     Int      @default(0)
+  favoriteHours  Json?
+  last30dRentals Int      @default(0)
+  updatedAt      DateTime @updatedAt
+}
+
+model HourlyHeatmap {
+  id        String   @id @default(cuid())
+  stationId String
+  date      DateTime
+  hour      Int
+  rentals   Int
+  createdAt DateTime @default(now())
+  @@unique([stationId, date, hour])
+}
+
+model RevenueDaily {
+  day       DateTime @id
+  total     Int
+  updatedAt DateTime @updatedAt
+}

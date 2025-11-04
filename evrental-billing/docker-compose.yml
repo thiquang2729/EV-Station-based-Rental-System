@@ -1,0 +1,78 @@
+version: '3.9'
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: evrental
+    ports:
+      - "3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ev-rental-network
+  payment-svc:
+    build: ./services/payment-svc
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      PORT: 8082
+      DATABASE_URL: mysql://root:root@evrental-billing-mysql-1:3306/evrental
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      TZ: Asia/Ho_Chi_Minh
+      SERVICE_RENTAL_BASE_URL: http://rental-svc:8081
+      VNPAY_TMN_CODE: "6PFBHL5O"
+      VNPAY_HASH_SECRET: "CQDBWABF701OB5Y09HL793ES9JD3VSZX"
+      VNPAY_PAY_URL: "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
+      VNPAY_RETURN_URL: "http://localhost:9080/api/v1/webhooks/vnpay/return"
+      VNPAY_IPN_URL: "http://localhost:9080/api/v1/webhooks/vnpay/ipn"
+      FRONTEND_SUCCESS_URL: "http://localhost:5173/?payment=done"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    # ports:
+    #   - "8082:8082"
+    networks:
+      - ev-rental-network
+  analytics-svc:
+    build: ./services/analytics-svc
+    environment:
+      PORT: 8083
+      DATABASE_URL: mysql://root:root@evrental-billing-mysql-1:3306/evrental_analytics
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      TZ: Asia/Ho_Chi_Minh
+      SERVICE_RENTAL_BASE_URL: http://rental-svc:8081
+      SERVICE_PAYMENT_BASE_URL: http://payment-svc:8082
+      ENABLE_CRON: true
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    networks:
+      - ev-rental-network
+
+  frontend:
+    build: ./frontend/ev-rental-analytics-pos-dashboard
+    container_name: billing-frontend
+    environment:
+      - NODE_ENV=production
+    ports:
+      - "5173:5173"
+    depends_on:
+      - payment-svc
+      - analytics-svc
+    networks:
+      - ev-rental-network
+
+volumes:
+  mysql_data:
+
+networks:
+  ev-rental-network:  # ← Thêm shared network
+    external: true
+    name: ev-rental-network

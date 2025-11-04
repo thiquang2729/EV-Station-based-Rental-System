@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model Station {
+  id        String   @id @default(cuid())
+  name      String
+  address   String
+  lat       Float
+  lng       Float
+  vehicles  Vehicle[]
+  bookings  Booking[]
+}
+
+model Vehicle {
+  id            String   @id @default(cuid())
+  name          String   @default("Unknown")
+  stationId     String
+  station       Station  @relation(fields: [stationId], references: [id])
+  type          String
+  plate         String   @unique
+  batteryLevel  Int
+  healthStatus  String   @default("OK")
+  pricePerHour  Int
+  isAvailable   Boolean  @default(true)
+  imageUrl      String?
+  bookings      Booking[]
+  incidents     Incident[]
+}
+
+model Booking {
+  id            String   @id @default(cuid())
+  userId        String
+  stationId     String
+  station       Station  @relation(fields: [stationId], references: [id])
+  vehicleId     String
+  vehicle       Vehicle  @relation(fields: [vehicleId], references: [id])
+  startTime     DateTime
+  endTime       DateTime?
+  status        String   @default("PENDING")
+  priceEstimate Int?
+  priceFinal    Int?
+  createdAt     DateTime @default(now())
+
+  handovers     Handover[]
+}
+
+model Handover {
+  id        String   @id @default(cuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  staffId   String
+  type      String   // PICKUP|RETURN
+  checklist Json
+  photos    Json
+  odo       Int
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+model Incident {
+  id          String   @id @default(cuid())
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
+  stationId   String
+  reporterId  String
+  severity    String
+  desc        String
+  photos      Json
+  createdAt   DateTime @default(now())
+}
