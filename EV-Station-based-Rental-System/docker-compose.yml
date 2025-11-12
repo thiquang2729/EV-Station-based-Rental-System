@@ -4,23 +4,21 @@ services:
   # MySQL Database
   mysql:
     image: mysql:8.0
-    env_file:
-      - ./AuthService/backend/.env
+    command: --default-authentication-plugin=mysql_native_password
+    # Only set root password and initial DB; do not pass MYSQL_USER here
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-authdb}
-    ports:
-      - "3306:3306"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-xdhdt}
+    # No host port mapping to avoid conflicts; containers connect via network
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -p$${MYSQL_ROOT_PASSWORD}"]
+      test: [ "CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD}" ]
       interval: 5s
       timeout: 5s
       retries: 10
     networks:
       - app-network
-      - ev-rental-network
     restart: unless-stopped
 
   # Auth Backend Service
@@ -33,9 +31,7 @@ services:
       PORT: 8000
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-authdb}
-      MYSQL_USER: ${MYSQL_USER:-root}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+      # DB creds and database come from env_file to match MySQL
       CLIENT_URL: http://localhost:3000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080,https://localhost,https://yourdomain.com,http://localhost:8060,http://127.0.0.1:8060
     depends_on:
       mysql:
@@ -43,13 +39,12 @@ services:
     ports:
       - "8003:8000"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/v1/health" ]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - app-network
-      - ev-rental-network
     restart: unless-stopped
 
   # Frontend Build
@@ -69,9 +64,11 @@ services:
 volumes:
   mysql_data:
 
+
 networks:
   app-network:
     driver: bridge
-  ev-rental-network:  # ← Thêm shared network
+  ev-rental-network:
+    # ← Thêm shared network
     external: true
     name: ev-rental-network
