@@ -40,8 +40,8 @@ services:
     container_name: admin-svc
     environment:
       PORT: 3001
-    expose:
-      - 3001
+    ports:
+      - "3001:3001"
     networks:
       - ev-rental-network
   # 🚗 Rental Service
@@ -59,8 +59,8 @@ services:
         condition: service_healthy
       admin-svc:
         condition: service_started
-    expose:
-      - 3002
+    ports:
+      - "3002:3002"
     networks:
       - ev-rental-network
   # 🚙 Fleet Service (nơi upload ảnh lên AWS S3)
@@ -100,7 +100,9 @@ services:
 volumes:
   dbdata:
 
+
 networks:
-  ev-rental-network:  # ← Thêm shared network
+  ev-rental-network:
+    # ← Thêm shared network
     external: true
     name: ev-rental-network

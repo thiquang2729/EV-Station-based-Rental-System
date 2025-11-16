@@ -75,8 +75,33 @@ r.put('/:id', async (req, res) => {
 r.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.station.delete({ where: { id: isNaN(id) ? id : Number(id) } });
-    res.json({ ok: true });
+    const stationId = isNaN(id) ? id : Number(id);
+
+    // Check if station exists
+    const station = await prisma.station.findUnique({
+      where: { id: stationId },
+      include: {
+        vehicles: true,
+        bookings: true
+      }
+    });
+
+    if (!station) {
+      return res.status(404).json({ error: 'Station not found' });
+    }
+
+    // Check for associated vehicles
+    if (station.vehicles.length > 0) {
+      return res.status(400).json({ error: 'Cannot delete station with associated vehicles. Please remove all vehicles first.' });
+    }
+
+    // Check for associated bookings
+    if (station.bookings.length > 0) {
+      return res.status(400).json({ error: 'Cannot delete station with associated bookings.' });
+    }
+
+    await prisma.station.delete({ where: { id: stationId } });
+    res.json({ success: true, message: 'Station deleted successfully' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
