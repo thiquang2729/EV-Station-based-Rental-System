@@ -5,7 +5,7 @@ import { createBooking } from '../api/rental';
 
 function formatPricePerDay(vnd) {
   if (vnd === null || vnd === undefined) return '-';
-  const suffix = ' ' + String.fromCharCode(0x0111) + '/ng' + String.fromCharCode(0x00E0) + 'y'; // " đ/ngày"
+  const suffix = ' đ/ngày';
   try { return Number(vnd).toLocaleString('vi-VN') + suffix; } catch { return String(vnd) + suffix; }
 }
 
@@ -13,8 +13,8 @@ export default function CarDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [state, setState] = useState(() => {
-    const s = new Date(); s.setHours(0,0,0,0);
-    const e = new Date(); e.setDate(e.getDate()+1); e.setHours(0,0,0,0);
+    const s = new Date(); s.setHours(0, 0, 0, 0);
+    const e = new Date(); e.setDate(e.getDate() + 1); e.setHours(0, 0, 0, 0);
     return { item: null, loading: true, error: '', start: s, end: e, submitting: false, submitMsg: '' };
   });
 
@@ -37,16 +37,16 @@ export default function CarDetails() {
   if (!item) return <div className="max-padd-container py-10">Khong tim thay xe.</div>;
 
   const desc = item.description || item.desc || item.details || '';
-  const pricePerDay = Number(item.pricePerHour || 0) * 24; // convert hourly to daily for display/estimate
-  const startMid = new Date(start); startMid.setHours(0,0,0,0);
-  const endMid = new Date(end); endMid.setHours(0,0,0,0);
+  const pricePerDay = Number(item.pricePerDay || 0); // giá lưu theo ngày
+  const startMid = new Date(start); startMid.setHours(0, 0, 0, 0);
+  const endMid = new Date(end); endMid.setHours(0, 0, 0, 0);
   const ms = Math.max(0, endMid - startMid);
-  const estDays = Math.max(1, Math.ceil(ms / (24*60*60*1000)));
+  const estDays = Math.max(1, Math.ceil(ms / (24 * 60 * 60 * 1000)));
   const estPrice = pricePerDay * estDays;
 
   function toDateValue(d) {
     const pad = (n) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 
   const onBook = async () => {
@@ -69,7 +69,7 @@ export default function CarDetails() {
         window.location.href = `http://localhost:5173/?bookingId=${encodeURIComponent(bookingId)}&amount=${encodeURIComponent(amount)}`;
         return;
       }
-      setState((st) => ({ ...st, submitMsg: `Dat xe thanh cong. Ma booking: ${data?.id || 'N/A'}. Uoc tinh: ${estPrice.toLocaleString('vi-VN')} \u0111`, submitting: false }));
+      setState((st) => ({ ...st, submitMsg: `Dat xe thanh cong. Ma booking: ${data?.id || 'N/A'}. Uoc tinh: ${estPrice.toLocaleString('vi-VN')} đ`, submitting: false }));
     } catch (e) {
       setState((st) => ({ ...st, submitMsg: (e && e.message) || 'Dat xe that bai', submitting: false }));
     }
@@ -77,7 +77,7 @@ export default function CarDetails() {
 
   return (
     <div className="max-padd-container py-10">
-      <button className="mb-6 btn-outline" onClick={() => navigate(-1)}>\u2B05 Quay lai</button>
+      <button className="mb-6 btn-outline" onClick={() => navigate(-1)}> Quay lai</button>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="rounded-xl border bg-white p-4 flex items-center justify-center min-h-[280px]">
@@ -95,26 +95,26 @@ export default function CarDetails() {
             <span className={`inline-block w-2 h-2 rounded-full ${item.isAvailable ? 'bg-emerald-500' : 'bg-gray-300'}`} />
             <span className="text-sm">Trang thai: {item.isAvailable ? 'San sang' : 'Khong san sang'}</span>
           </div>
-          <div className="mb-4 font-semibold">Gia thue: {formatPricePerDay(pricePerDay)}</div>
+          <div className="mb-4 font-semibold">Giá thuê: {formatPricePerDay(pricePerDay)}</div>
           <div>
-            <div className="font-semibold mb-1">Mo ta</div>
-            <div className="text-sm text-gray-700 whitespace-pre-line">{desc || 'Khong co mo ta'}</div>
+            <div className="font-semibold mb-1">Mô tả</div>
+            <div className="text-sm text-gray-700 whitespace-pre-line">{desc?.trim() || 'Khong co mo ta'}</div>
           </div>
           <div className="h-px bg-gray-200 my-4" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="text-sm">Bat dau
               <input type="date" className="border p-2 rounded w-full"
                 value={toDateValue(start)}
-                onChange={(e) => { const d = new Date(e.target.value); if (!isNaN(d)) { d.setHours(0,0,0,0); setState((st) => ({ ...st, start: d })); } }} />
+                onChange={(e) => { const d = new Date(e.target.value); if (!isNaN(d)) { d.setHours(0, 0, 0, 0); setState((st) => ({ ...st, start: d })); } }} />
             </label>
             <label className="text-sm">Ket thuc
               <input type="date" className="border p-2 rounded w-full"
                 value={toDateValue(end)}
-                onChange={(e) => { const d = new Date(e.target.value); if (!isNaN(d)) { d.setHours(0,0,0,0); setState((st) => ({ ...st, end: d })); } }} />
+                onChange={(e) => { const d = new Date(e.target.value); if (!isNaN(d)) { d.setHours(0, 0, 0, 0); setState((st) => ({ ...st, end: d })); } }} />
             </label>
           </div>
           <div className="mt-3 text-sm text-gray-700">Thoi luong uoc tinh: <span className="font-semibold">{estDays} ngay</span></div>
-          <div className="mt-1 text-sm">Tam tinh: <span className="font-semibold">{estPrice.toLocaleString('vi-VN')} \u0111</span></div>
+          <div className="mt-1 text-sm">Tam tinh: <span className="font-semibold">{estPrice.toLocaleString('vi-VN')} đ</span></div>
           <div className="mt-4">
             <button disabled={!item.isAvailable || submitting} className="btn-soild" onClick={onBook}>
               {submitting ? 'Dang dat...' : (item.isAvailable ? 'Dat xe' : 'Khong the dat')}
@@ -126,4 +126,3 @@ export default function CarDetails() {
     </div>
   );
 }
-

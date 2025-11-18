@@ -138,8 +138,8 @@ const VehicleFooter = () => {
                 <div className="text-base font-semibold mb-1">{v.name || v.id}</div>
                 <div className="text-sm text-gray-500 mb-1">{v.type || 'Vehicle'}</div>
                 <div className="text-sm">{v.isAvailable ? 'Sẵn sàng' : 'Không sẵn sàng'}</div>
-                {v.pricePerHour !== undefined && (
-                  <div className="mt-2 font-semibold">{Number(v.pricePerHour).toLocaleString('vi-VN')} d/gi?</div>
+                {v.pricePerDay !== undefined && (
+                  <div className="mt-2 font-semibold">{Number(v.pricePerDay||0).toLocaleString('vi-VN')} đ/ngày</div>
                 )}
               </div>
             </div>
@@ -172,9 +172,9 @@ const VehiclesResult = ({ items = [], loading, error, stationName, title }) => {
                   <div className="text-base font-semibold mb-1">{v.name || v.id}</div>
                   <div className="text-sm text-gray-500 mb-1">{v.type || 'Vehicle'}</div>
                   <div className="text-sm">{v.isAvailable ? 'Sẵn sàng' : 'Không sẵn sàng'}</div>
-                  {v.pricePerHour !== undefined && (
-                  <div className="mt-2 font-semibold">{Number((v.pricePerHour||0)*24).toLocaleString('vi-VN')} \u0111/ng\u00E0y</div>
-                  )}
+                  {v.pricePerDay !== undefined && (
+                  <div className="mt-2 font-semibold">{Number(v.pricePerDay||0).toLocaleString('vi-VN')} đ/ngày</div>
+                    )}
                 </div>
               </div>
             ))}

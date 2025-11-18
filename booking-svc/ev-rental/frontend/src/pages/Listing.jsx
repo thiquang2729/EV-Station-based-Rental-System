@@ -43,8 +43,10 @@ export const Listing = () => {
       if (stationId && String(v.stationId) !== String(stationId)) return false;
       if (avail === 'true' && !v.isAvailable) return false;
       if (avail === 'false' && v.isAvailable) return false;
-      if (priceMin !== '' && Number.isFinite(Number(priceMin)) && (v.pricePerHour ?? 0) < Number(priceMin)) return false;
-      if (priceMax !== '' && Number.isFinite(Number(priceMax)) && (v.pricePerHour ?? 0) > Number(priceMax)) return false;
+    // priceMin/priceMax nhập theo ngày
+    const pricePerDay = v.pricePerDay || 0;
+    if (priceMin !== '' && Number.isFinite(Number(priceMin)) && pricePerDay < Number(priceMin)) return false;
+    if (priceMax !== '' && Number.isFinite(Number(priceMax)) && pricePerDay > Number(priceMax)) return false;
       if (q) {
         const hay = `${v.name || ''} ${v.id || ''} ${v.plate || ''}`.toLowerCase();
         if (!hay.includes(q.toLowerCase())) return false;
@@ -118,11 +120,11 @@ export const Listing = () => {
                     />
                   </div>
                   <div className="text-sm text-gray-500 mb-2 capitalize">{v.type || 'vehicle'}</div>
-                  {v.pricePerHour !== undefined && (
-                    <div className="text-xs text-gray-500">{Number((v.pricePerHour||0)*24).toLocaleString('vi-VN')} \u0111/ng\u00E0y</div>
+                  {v.pricePerDay !== undefined && (
+                    <div className="text-xs text-gray-500">{Number(v.pricePerDay||0).toLocaleString('vi-VN')} đ/ngày</div>
                   )}
-                  {v.pricePerHour !== undefined && (
-                    <div className="text-sm font-semibold">{v.pricePerHour} đ/giờ</div>
+                  {v.pricePerDay !== undefined && (
+                    <div className="text-sm font-semibold">{Number(v.pricePerDay||0).toLocaleString('vi-VN')} đ/ngày</div>
                   )}
                 </div>
               </NavLink>

@@ -41,7 +41,7 @@ r.post('/', async (req, res) => {
     const stationId = vehicle.stationId;
     const start = new Date(startTime);
     const estimateH = Number(estDurationH || 1);
-    const priceEstimate = (vehicle.pricePerHour || 0) * estimateH;
+    const priceEstimate = (vehicle.pricePerDay || 0) * (estimateH / 24);
 
     const booking = await prisma.booking.create({
       data: {

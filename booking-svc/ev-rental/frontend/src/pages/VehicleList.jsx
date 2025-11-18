@@ -47,8 +47,8 @@ export default function VehicleList() {
                     />
                   </div>
                   <div className="text-sm text-gray-500 mb-2 capitalize">{v.type || 'vehicle'}</div>
-                  {v.pricePerHour !== undefined && (
-                    <div className="text-sm font-semibold">{Number(v.pricePerHour).toLocaleString('vi-VN')} đ/giờ</div>
+                  {v.pricePerDay !== undefined && (
+                    <div className="text-sm font-semibold">{Number(v.pricePerDay || 0).toLocaleString('vi-VN')} đ/ngày</div>
                   )}
                   <div className="mt-3">
                     <NavLink to={`/vehicles/${encodeURIComponent(v.id)}`} className="btn-outline text-sm">Detail</NavLink>
@@ -64,4 +64,3 @@ export default function VehicleList() {
     </div>
   );
 }
-

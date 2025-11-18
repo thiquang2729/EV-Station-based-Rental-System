@@ -28,9 +28,10 @@ model Vehicle {
   plate         String   @unique
   batteryLevel  Int
   healthStatus  String   @default("OK")
-  pricePerHour  Int
+  pricePerDay   Int
   isAvailable   Boolean  @default(true)
   imageUrl      String?
+  description   String?
   incidents     Incident[]
 }
 
@@ -41,6 +42,7 @@ model Incident {
   stationId   String
   reporterId  String
   severity    String
+  status      String   @default("OPEN")
   desc        String
   photos      Json
   createdAt   DateTime @default(now())

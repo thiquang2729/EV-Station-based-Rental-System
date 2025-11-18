@@ -26,9 +26,10 @@ model Vehicle {
   plate         String   @unique
   batteryLevel  Int
   healthStatus  String   @default("OK")
-  pricePerHour  Int
+  pricePerDay   Int
   isAvailable   Boolean  @default(true)
   imageUrl      String?
+  description   String?
   bookings      Booking[]
   incidents     Incident[]
 }

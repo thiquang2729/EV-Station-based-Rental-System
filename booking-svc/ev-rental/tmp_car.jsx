@@ -16,8 +16,8 @@ export const CarDetails = () => {
   const [error, setError] = useState('');
 
   // Booking state
-  const [start, setStart] = useState(() => { const d=new Date(); d.setMinutes(0,0,0); return d; });
-  const [end, setEnd] = useState(() => { const d=new Date(); d.setHours(d.getHours()+1,0,0,0); return d; });
+  const [start, setStart] = useState(() => { const d = new Date(); d.setMinutes(0, 0, 0); return d; });
+  const [end, setEnd] = useState(() => { const d = new Date(); d.setHours(d.getHours() + 1, 0, 0, 0); return d; });
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState('');
 
@@ -49,7 +49,7 @@ export const CarDetails = () => {
 
   function toInputValue(d) {
     const pad = (n) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
   const onBook = async () => {
@@ -103,20 +103,20 @@ export const CarDetails = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="text-sm">Bắt đầu
               <input type="datetime-local" className="border p-2 rounded w-full"
-                     value={toInputValue(start)}
-                     onChange={(e)=>{ const d=new Date(e.target.value); if(!isNaN(d)) setStart(d); }} />
+                value={toInputValue(start)}
+                onChange={(e) => { const d = new Date(e.target.value); if (!isNaN(d)) setStart(d); }} />
             </label>
             <label className="text-sm">Kết thúc
               <input type="datetime-local" className="border p-2 rounded w-full"
-                     value={toInputValue(end)}
-                     onChange={(e)=>{ const d=new Date(e.target.value); if(!isNaN(d)) setEnd(d); }} />
+                value={toInputValue(end)}
+                onChange={(e) => { const d = new Date(e.target.value); if (!isNaN(d)) setEnd(d); }} />
             </label>
           </div>
           <div className="mt-3 text-sm text-gray-700">Thời lượng ước tính: <span className="font-semibold">{estHours} giờ</span></div>
           <div className="mt-1 text-sm">Tạm tính: <span className="font-semibold">{estPrice.toLocaleString('vi-VN')} đ</span></div>
           <div className="mt-4">
             <button disabled={!item.isAvailable || submitting} className="btn-soild"
-                    onClick={onBook}>
+              onClick={onBook}>
               {submitting ? 'Đang đặt...' : (item.isAvailable ? 'Đặt xe' : 'Không thể đặt')}
             </button>
           </div>

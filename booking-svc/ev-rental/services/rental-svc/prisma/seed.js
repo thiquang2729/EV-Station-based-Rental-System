@@ -7,8 +7,8 @@ async function main() {
   });
   // await prisma.vehicle.createMany({
   //   data: [
-  //     { stationId: st.id, type: 'scooter', plate: '59A1-00001', batteryLevel: 85, pricePerHour: 20000 },
-  //     { stationId: st.id, type: 'scooter', plate: '59A1-00002', batteryLevel: 65, pricePerHour: 18000 }
+  //     { stationId: st.id, type: 'scooter', plate: '59A1-00001', batteryLevel: 85, pricePerDay: 20000 },
+  //     { stationId: st.id, type: 'scooter', plate: '59A1-00002', batteryLevel: 65, pricePerDay: 18000 }
   //   ]
   // });
   console.log('Seeded rental data');

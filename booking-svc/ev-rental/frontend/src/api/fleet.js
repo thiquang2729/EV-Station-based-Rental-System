@@ -13,6 +13,7 @@ export const deleteFleetVehicle  = (id) => api(`${FLEET_API}/vehicles/${id}`, { 
 
 export const listIncidents  = () => api(`${FLEET_API}/incidents`);
 export const createIncident = (payload) => api(`${FLEET_API}/incidents`, { method: 'POST', body: payload });
+export const resolveIncident = (id) => api(`${FLEET_API}/incidents/${id}/resolve`, { method: 'PUT' });
 
 export const getOverview = () => api(`${FLEET_API}/overview`);
 

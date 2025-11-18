@@ -31,17 +31,18 @@ r.get('/:id', async (req, res) => {
 r.put('/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
-    const { isAvailable, batteryLevel, healthStatus, pricePerHour, name, imageUrl } = req.body || {};
+    const { isAvailable, batteryLevel, healthStatus, pricePerDay, name, imageUrl, description } = req.body || {};
 
     const updated = await prisma.vehicle.update({
       where: { id: String(id) },
       data: {
         ...(typeof isAvailable === 'boolean' ? { isAvailable } : {}),
         ...(typeof batteryLevel === 'number' ? { batteryLevel } : {}),
-        ...(typeof pricePerHour === 'number' ? { pricePerHour } : {}),
+        ...(typeof pricePerDay === 'number' ? { pricePerDay } : {}),
         ...(healthStatus ? { healthStatus } : {}),
         ...(name ? { name } : {}),
         ...(typeof imageUrl !== 'undefined' ? { imageUrl } : {}),
+        ...(typeof description !== 'undefined' ? { description } : {}),
       },
     });
 
@@ -55,12 +56,12 @@ r.put('/:id/status', async (req, res) => {
 // Create new vehicle
 r.post('/', async (req, res) => {
   try {
-    const { id, name, stationId, plate, type, isAvailable, batteryLevel, healthStatus, pricePerHour, imageUrl } = req.body || {};
+    const { id, name, stationId, plate, type, isAvailable, batteryLevel, healthStatus, pricePerDay, imageUrl, description } = req.body || {};
 
-    if (!stationId || !type || !plate || typeof pricePerHour !== 'number') {
+    if (!stationId || !type || !plate || typeof pricePerDay !== 'number') {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: stationId, type, plate, pricePerHour (number)'
+        message: 'Missing required fields: stationId, type, plate, pricePerDay (number)'
       });
     }
 
@@ -86,8 +87,9 @@ r.post('/', async (req, res) => {
         isAvailable: typeof isAvailable === 'boolean' ? isAvailable : true,
         batteryLevel: typeof batteryLevel === 'number' ? batteryLevel : 100,
         healthStatus: healthStatus || 'OK',
-        pricePerHour: Number(pricePerHour),
+        pricePerDay: Number(pricePerDay),
         imageUrl: imageUrl || null,
+        description: description || null,
       },
     });
 
