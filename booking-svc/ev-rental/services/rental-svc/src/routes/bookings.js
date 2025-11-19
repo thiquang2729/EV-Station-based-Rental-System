@@ -38,20 +38,31 @@ r.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Vehicle does not belong to provided stationId' });
     }
 
+    if (!vehicle.isAvailable) {
+      return res.status(400).json({ error: 'Vehicle is not available' });
+    }
+
     const stationId = vehicle.stationId;
     const start = new Date(startTime);
     const estimateH = Number(estDurationH || 1);
     const priceEstimate = (vehicle.pricePerDay || 0) * (estimateH / 24);
 
-    const booking = await prisma.booking.create({
-      data: {
-        userId,
-        vehicleId,
-        stationId,
-        startTime: start,
-        status: 'PENDING',
-        priceEstimate,
-      },
+    const booking = await prisma.$transaction(async (tx) => {
+      const created = await tx.booking.create({
+        data: {
+          userId,
+          vehicleId,
+          stationId,
+          startTime: start,
+          status: 'PENDING',
+          priceEstimate,
+        },
+      });
+      await tx.vehicle.update({
+        where: { id: vehicleId },
+        data: { isAvailable: false },
+      });
+      return created;
     });
 
     // Gửi yêu cầu tạo ý định thanh toán sang payment-svc qua MQ (không chặn response)

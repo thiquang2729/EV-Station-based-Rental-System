@@ -84,14 +84,36 @@ const CategoryCards = ({ onSelectType }) => {
   );
 };
 
-const SearchBar = ({ stationId, setStationId, onSearch, searching }) => {
+const SearchBar = ({ stationId, setStationId, station, onSearch, searching }) => {
+  const lat = station ? Number(station.lat) : NaN;
+  const lng = station ? Number(station.lng) : NaN;
+  const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+
+  const handleOpenMap = () => {
+    if (!hasCoords) return;
+    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="max-w-3xl w-full bg-white rounded-full shadow-xl ring-1 ring-slate-900/10 overflow-visible">
-      <div className="grid grid-cols-12 items-center">
-        <div className="col-span-11 px-5 py-4 relative">
+      <div className="grid grid-cols-12 items-stretch">
+        <div className="col-span-10 px-5 py-4 relative">
           <LocationPicker value={stationId} onChange={setStationId} />
         </div>
         <button
+          type="button"
+          onClick={handleOpenMap}
+          disabled={!hasCoords}
+          className={`col-span-1 h-full flexCenter text-white ${hasCoords ? 'bg-emerald-600 cursor-pointer' : 'bg-gray-300 cursor-not-allowed'}`}
+          title={hasCoords ? 'Open on Google Maps' : 'Select a station with coordinates'}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+            <path fillRule="evenodd" d="M12 2.25c-3.728 0-6.75 2.94-6.75 6.563 0 4.661 5.635 10.431 6.014 10.826a.75.75 0 001.072 0c.379-.395 6.014-6.165 6.014-10.826 0-3.623-3.022-6.563-6.75-6.563zm0 9.188a2.625 2.625 0 100-5.25 2.625 2.625 0 000 5.25z" clipRule="evenodd" />
+          </svg>
+        </button>
+        <button
+          type="button"
           onClick={() => onSearch && onSearch()}
           disabled={!stationId || searching}
           className={`col-span-1 h-full flexCenter ${(!stationId || searching) ? 'bg-gray-300 cursor-not-allowed' : 'bg-black cursor-pointer'} text-white`}
@@ -190,6 +212,7 @@ const VehiclesResult = ({ items = [], loading, error, stationName, title }) => {
 export default function Home() {
   const [stationId, setStationId] = useState('');
   const [stationName, setStationName] = useState('');
+  const [selectedStation, setSelectedStation] = useState(null);
   const [selectedType, setSelectedType] = useState('');
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -243,12 +266,20 @@ export default function Home() {
   useEffect(() => {
     if (!stationId) {
       setStationName('');
+      setSelectedStation(null);
       if (!selectedType) setItems([]);
       return;
     }
+    setSelectedStation(null);
     getStation(stationId)
-      .then((s) => setStationName(s?.name || ''))
-      .catch(() => setStationName(''));
+      .then((s) => {
+        setStationName(s?.name || '');
+        setSelectedStation(s || null);
+      })
+      .catch(() => {
+        setStationName('');
+        setSelectedStation(null);
+      });
     // ưu tiên lọc theo loại nếu đang chọn
     if (selectedType) {
       onSelectType(selectedType);
@@ -278,7 +309,7 @@ export default function Home() {
         <div className="max-padd-container text-center">
           <h1 className="mb-6">Your Road Trip Starts Here</h1>
           <div className="flexCenter">
-            <SearchBar stationId={stationId} setStationId={setStationId} onSearch={onSearch} searching={loading} />
+            <SearchBar stationId={stationId} setStationId={setStationId} station={selectedStation} onSearch={onSearch} searching={loading} />
           </div>
         </div>
       </section>
