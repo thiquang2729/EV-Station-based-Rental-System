@@ -45,4 +45,7 @@ nginx_config:
   http_admin:
     client_max_body_size: 10m
   http_configuration_snippet: |
+    # Forward Authorization header từ client đến upstream
     proxy_set_header Authorization $http_authorization;
+    # Hoặc có thể dùng cách này để đảm bảo header được forward
+    proxy_pass_request_headers on;
