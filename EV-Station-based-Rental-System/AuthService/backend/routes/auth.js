@@ -17,7 +17,11 @@ router.post("/logout", authController.logOut);
 router.get("/introspect", verifyToken, (req, res) => {
   return res.json({
     active: true,
-    user: { id: req.user.id, role: req.user.role },
+    user: { 
+      id: req.user.id, 
+      role: req.user.role,
+      fullName: req.user.fullName || null
+    },
   });
 });
 

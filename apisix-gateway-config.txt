@@ -1,0 +1,1336 @@
+================================================================================
+HƯỚNG DẪN CHI TIẾT CẤU HÌNH APISIX GATEWAY
+EV Station-based Rental System
+================================================================================
+
+PHẦN 1: CẤU HÌNH CORS TOÀN CỤC (GLOBAL PLUGIN)
+================================================================================
+
+1.1. TẠO GLOBAL PLUGIN CORS QUA ADMIN API
+-----------------------------------------
+
+CORS toàn cục sẽ áp dụng cho TẤT CẢ các routes trừ khi route đó override lại.
+
+Lệnh tạo Global Plugin CORS:
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/global_rules/cors \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plugins": {
+      "cors": {
+        "allow_origins": "*",
+        "allow_methods": "GET,POST,PUT,DELETE,PATCH,OPTIONS,HEAD",
+        "allow_headers": "Authorization,Content-Type,Accept,Origin,User-Agent,DNT,Cache-Control,X-Mx-ReqToken,X-Requested-With",
+        "expose_headers": "*",
+        "max_age": 3600,
+        "allow_credential": true
+      }
+    },
+    "desc": "Global CORS configuration for all routes"
+  }'
+
+Giải thích các tham số:
+- allow_origins: "*" = cho phép tất cả origins (production nên chỉ định domain cụ thể)
+- allow_methods: Các HTTP methods được phép
+- allow_headers: Các headers được phép trong request
+- expose_headers: Các headers được expose trong response
+- max_age: Thời gian cache preflight request (giây)
+- allow_credential: Cho phép gửi credentials (cookies, auth headers)
+
+1.2. CẤU HÌNH CORS CHO PRODUCTION (BẢO MẬT HƠN)
+-----------------------------------------------
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/global_rules/cors \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plugins": {
+      "cors": {
+        "allow_origins": "https://yourdomain.com,https://www.yourdomain.com,http://localhost:3000,http://localhost:3004",
+        "allow_methods": "GET,POST,PUT,DELETE,PATCH,OPTIONS,HEAD",
+        "allow_headers": "Authorization,Content-Type,Accept,Origin,User-Agent,DNT,Cache-Control,X-Mx-ReqToken,X-Requested-With",
+        "expose_headers": "Content-Length,Content-Type,Authorization",
+        "max_age": 3600,
+        "allow_credential": true
+      }
+    },
+    "desc": "Global CORS configuration - Production"
+  }'
+
+1.3. XEM GLOBAL PLUGIN HIỆN TẠI
+-------------------------------
+
+curl http://127.0.0.1:9180/apisix/admin/global_rules/cors \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1"
+
+1.4. XÓA GLOBAL PLUGIN (NẾU CẦN)
+---------------------------------
+
+curl -X DELETE http://127.0.0.1:9180/apisix/admin/global_rules/cors \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1"
+
+
+================================================================================
+PHẦN 2: CẤU HÌNH AUTHENTICATION VỚI AUTH_REQUEST PLUGIN
+================================================================================
+
+2.1. TẠO UPSTREAM CHO AUTH SERVICE
+----------------------------------
+
+Upstream này sẽ được dùng để verify token qua endpoint /api/v1/auth/introspect
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/upstreams/auth-service-upstream \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nodes": {
+      "auth-service:8000": 1
+    },
+    "type": "roundrobin",
+    "scheme": "http",
+    "desc": "Upstream for Auth Service - Token verification"
+  }'
+
+2.2. TẠO PLUGIN CONFIG CHO AUTH_REQUEST
+----------------------------------------
+
+Plugin config này sẽ được tái sử dụng cho nhiều routes cần authentication.
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/plugin_configs/auth-required \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plugins": {
+      "authz-casbin": {
+        "model_path": "/usr/local/apisix/conf/casbin/model.conf",
+        "policy_path": "/usr/local/apisix/conf/casbin/policy.csv"
+      }
+    },
+    "desc": "Authentication required plugin config"
+  }'
+
+HOẶC sử dụng auth_request plugin (recommended):
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/plugin_configs/auth-required \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plugins": {
+      "authz-keycloak": {
+        "token_endpoint": "http://auth-service:8000/api/v1/auth/introspect",
+        "permissions": []
+      }
+    },
+    "desc": "Authentication required plugin config"
+  }'
+
+LƯU Ý: APISIX không có plugin auth_request trực tiếp như Nginx. 
+Có 2 cách tiếp cận:
+
+CÁCH 1: Sử dụng server-rewrite plugin để gọi auth service trước khi forward request
+CÁCH 2: Sử dụng openid-connect plugin hoặc authz-keycloak plugin
+CÁCH 3: Sử dụng custom plugin hoặc serverless-pre-function để verify token
+
+2.3. CÁCH 3: SỬ DỤNG SERVERLESS-PRE-FUNCTION ĐỂ VERIFY TOKEN
+-------------------------------------------------------------
+
+Tạo plugin config với serverless-pre-function:
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/plugin_configs/auth-verify \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plugins": {
+      "serverless-pre-function": {
+        "phase": "rewrite",
+        "functions": [
+          "return function(conf, ctx)\n  local http = require \"resty.http\"\n  local httpc = http.new()\n  local res, err = httpc:request_uri(\"http://auth-service:8000/api/v1/auth/introspect\", {\n    method = \"GET\",\n    headers = {\n      [\"Authorization\"] = ctx.var.http_authorization\n    }\n  })\n  if not res then\n    ngx.status = 401\n    ngx.say(\"{\\\"error\\\":\\\"Unauthorized\\\"}\")\n    ngx.exit(401)\n  end\n  if res.status ~= 200 then\n    ngx.status = 401\n    ngx.say(\"{\\\"error\\\":\\\"Unauthorized\\\"}\")\n    ngx.exit(401)\n  end\n  local cjson = require \"cjson\"\n  local data = cjson.decode(res.body)\n  if not data.active then\n    ngx.status = 401\n    ngx.say(\"{\\\"error\\\":\\\"Token invalid\\\"}\")\n    ngx.exit(401)\n  end\n  -- Set user info in headers để upstream có thể sử dụng\n  ngx.req.set_header(\"X-User-Id\", data.user.id)\n  ngx.req.set_header(\"X-User-Role\", data.user.role)\nend"
+        ]
+      }
+    },
+    "desc": "Token verification using serverless-pre-function"
+  }'
+
+2.4. CÁCH ĐƠN GIẢN HƠN: SỬ DỤNG OPENID-CONNECT PLUGIN
+-----------------------------------------------------
+
+Nếu auth service hỗ trợ OIDC:
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/plugin_configs/auth-oidc \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plugins": {
+      "openid-connect": {
+        "client_id": "apisix",
+        "client_secret": "your-secret",
+        "discovery": "http://auth-service:8000/.well-known/openid-configuration",
+        "scope": "openid profile",
+        "bearer_only": true,
+        "realm": "ev-rental",
+        "introspection_endpoint": "http://auth-service:8000/api/v1/auth/introspect",
+        "introspection_endpoint_auth_method": "client_secret_post"
+      }
+    },
+    "desc": "OIDC authentication config"
+  }'
+
+2.5. CÁCH THỰC TẾ NHẤT: SỬ DỤNG CUSTOM AUTH VỚI HTTP LOGIC
+----------------------------------------------------------
+
+Tạo một route riêng để verify token, sau đó dùng response-rewrite hoặc 
+serverless-pre-function để check kết quả.
+
+Bước 1: Tạo route cho auth introspect (internal):
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/auth-introspect \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/internal/auth/introspect",
+    "upstream": {
+      "nodes": {
+        "auth-service:8000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/auth/introspect"
+      }
+    },
+    "desc": "Internal route for token verification"
+  }'
+
+Bước 2: Tạo plugin config sử dụng serverless-pre-function để gọi route này:
+
+
+================================================================================
+PHẦN 3: VÍ DỤ CẤU HÌNH ROUTES VỚI AUTHENTICATION
+================================================================================
+
+3.1. ROUTE KHÔNG CẦN AUTHENTICATION (PUBLIC)
+---------------------------------------------
+
+Ví dụ: Health check endpoint
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/health \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/health",
+    "upstream": {
+      "nodes": {
+        "auth-service:8000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/health"
+      }
+    },
+    "desc": "Health check - no auth required"
+  }'
+
+3.2. ROUTE CẦN AUTHENTICATION - CÁCH 1: DÙNG PLUGIN CONFIG
+-----------------------------------------------------------
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/api-users \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/api/v1/users*",
+    "upstream": {
+      "nodes": {
+        "auth-backend:8000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugin_config_id": "auth-verify",
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/users$1"
+      }
+    },
+    "desc": "User management endpoints - auth required"
+  }'
+
+3.3. ROUTE CẦN AUTHENTICATION - CÁCH 2: INLINE PLUGIN
+-----------------------------------------------------
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/api-documents \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/api/v1/documents*",
+    "upstream": {
+      "nodes": {
+        "auth-backend:8000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugins": {
+      "serverless-pre-function": {
+        "phase": "rewrite",
+        "functions": [
+          "return function(conf, ctx)\n    local http = require \"resty.http\"\n    local httpc = http.new()\n    local token = ctx.var.http_authorization\n    if not token then\n      ngx.status = 401\n      ngx.say(\"{\\\"error\\\":\\\"Missing Authorization header\\\"}\")\n      ngx.exit(401)\n    end\n    local res, err = httpc:request_uri(\"http://auth-backend:8000/api/v1/auth/introspect\", {\n      method = \"GET\",\n      headers = {\n        [\"Authorization\"] = token\n      }\n    })\n    if not res or res.status ~= 200 then\n      ngx.status = 401\n      ngx.say(\"{\\\"error\\\":\\\"Unauthorized\\\"}\")\n      ngx.exit(401)\n    end\n    local cjson = require \"cjson\"\n    local data = cjson.decode(res.body)\n    if not data.active then\n      ngx.status = 401\n      ngx.say(\"{\\\"error\\\":\\\"Token invalid\\\"}\")\n      ngx.exit(401)\n    end\n    ngx.req.set_header(\"X-User-Id\", data.user.id)\n    ngx.req.set_header(\"X-User-Role\", data.user.role)\n  end"
+        ]
+      },
+      "proxy-rewrite": {
+        "uri": "/api/v1/documents$1"
+      }
+    },
+    "desc": "Document management - auth required"
+  }'
+
+3.4. ROUTE VỚI ROLE-BASED ACCESS CONTROL (RBAC)
+-----------------------------------------------
+
+Ví dụ: Chỉ ADMIN mới được truy cập
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/api-users-admin \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/api/v1/users/*",
+    "methods": ["PUT", "DELETE"],
+    "upstream": {
+      "nodes": {
+        "auth-backend:8000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugins": {
+      "serverless-pre-function": {
+        "phase": "rewrite",
+        "functions": [
+          "return function(conf, ctx)\n    local http = require \"resty.http\"\n    local httpc = http.new()\n    local token = ctx.var.http_authorization\n    if not token then\n      ngx.status = 401\n      ngx.header.content_type = \"application/json\"\n      ngx.say(\"{\\\"error\\\":\\\"Missing Authorization header\\\"}\")\n      ngx.exit(401)\n    end\n    local res, err = httpc:request_uri(\"http://auth-backend:8000/api/v1/auth/introspect\", {\n      method = \"GET\",\n      headers = {\n        [\"Authorization\"] = token\n      }\n    })\n    if not res or res.status ~= 200 then\n      ngx.status = 401\n      ngx.header.content_type = \"application/json\"\n      ngx.say(\"{\\\"error\\\":\\\"Unauthorized\\\"}\")\n      ngx.exit(401)\n    end\n    local cjson = require \"cjson\"\n    local data = cjson.decode(res.body)\n    if not data.active then\n      ngx.status = 401\n      ngx.header.content_type = \"application/json\"\n      ngx.say(\"{\\\"error\\\":\\\"Token invalid\\\"}\")\n      ngx.exit(401)\n    end\n    -- Check role\n    if data.user.role ~= \"ADMIN\" then\n      ngx.status = 403\n      ngx.header.content_type = \"application/json\"\n      ngx.say(\"{\\\"error\\\":\\\"Forbidden: Admin access required\\\"}\")\n      ngx.exit(403)\n    end\n    ngx.req.set_header(\"X-User-Id\", data.user.id)\n    ngx.req.set_header(\"X-User-Role\", data.user.role)\n  end"
+        ]
+      },
+      "proxy-rewrite": {
+        "uri": "/api/v1/users$1"
+      }
+    },
+    "desc": "User admin endpoints - ADMIN only"
+  }'
+
+
+================================================================================
+PHẦN 4: CẤU HÌNH ĐẦY ĐỦ CHO TẤT CẢ SERVICES
+================================================================================
+
+4.1. AUTH SERVICE ROUTES
+------------------------
+
+4.1.1. Public Auth Endpoints (không cần auth):
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/auth-register \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/api/v1/auth/register",
+    "methods": ["POST"],
+    "upstream": {
+      "nodes": {
+        "auth-service:8000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/auth/register"
+      }
+    },
+    "desc": "User registration - public"
+  }'
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/auth-login \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/api/v1/auth/login",
+    "methods": ["POST"],
+    "upstream": {
+      "nodes": {
+        "auth-service:8000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/auth/login"
+      }
+    },
+    "desc": "User login - public"
+  }'
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/auth-refresh \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/api/v1/auth/refresh",
+    "methods": ["POST"],
+    "upstream": {
+      "nodes": {
+        "auth-service:8000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/auth/refresh"
+      }
+    },
+    "desc": "Token refresh - public"
+  }'
+
+4.1.2. Protected Auth Endpoints (cần auth):
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/auth-logout \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/api/v1/auth/logout",
+    "methods": ["POST"],
+    "upstream": {
+      "nodes": {
+        "auth-service:8000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugin_config_id": "auth-verify",
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/auth/logout"
+      }
+    },
+    "desc": "User logout - auth required"
+  }'
+
+4.2. USER MANAGEMENT ROUTES
+----------------------------
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/api-users-list \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/api/v1/users",
+    "methods": ["GET"],
+    "upstream": {
+      "nodes": {
+        "auth-backend:8000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugin_config_id": "auth-verify",
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/users"
+      }
+    },
+    "desc": "List users - STAFF/ADMIN only"
+  }'
+
+# GET USER BY ID
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/api-users-get-by-id \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/api/v1/users/*",
+    "methods": ["GET"],
+    "upstream": {
+      "nodes": {
+        "auth-backend:8000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugin_config_id": "auth-verify",
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/users$1"
+      }
+    },
+    "desc": "Get user by ID - STAFF/ADMIN only",
+    "priority": 2
+  }'
+
+# PUT USER BY ID (ADMIN only) - Route này phải có priority cao hơn để match trước route tổng quát
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/api-users-update-by-id \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/api/v1/users/*",
+    "methods": ["PUT"],
+    "upstream": {
+      "nodes": {
+        "auth-backend:8000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugin_config_id": "auth-verify",
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/users$1"
+      }
+    },
+    "desc": "Update user by ID - ADMIN only",
+    "priority": 2
+  }'
+
+# COMPLAINTS ROUTES
+# Route cụ thể cho GET /api/v1/complaints/renter/:renterId - User có thể xem của chính họ
+# Phải đặt trước route tổng quát với priority cao hơn
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/api-complaints-renter \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/api/v1/complaints/renter/*",
+    "methods": ["GET"],
+    "upstream": {
+      "nodes": {
+        "auth-backend:8000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugin_config_id": "auth-verify",
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/complaints/renter$1"
+      }
+    },
+    "desc": "Get complaints by renter ID - User can see own, STAFF/ADMIN can see all",
+    "priority": 3
+  }'
+
+# Route tổng quát cho complaints - auth required (không có RBAC, để backend xử lý)
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/api-complaints \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/api/v1/complaints*",
+    "upstream": {
+      "nodes": {
+        "auth-backend:8000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugin_config_id": "auth-verify",
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/complaints$1"
+      }
+    },
+    "desc": "Complaint management endpoints - auth required (RBAC handled by backend)",
+    "priority": 1
+  }'
+
+4.3. RENTAL SERVICE ROUTES
+--------------------------
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/rental-health \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/rental/health",
+    "methods": ["GET"],
+    "upstream": {
+      "nodes": {
+        "rental-svc:4000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/health"
+      }
+    },
+    "desc": "Rental service health check"
+  }'
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/rental-vehicles \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/rental/api/v1/vehicles*",
+    "methods": ["GET"],
+    "upstream": {
+      "nodes": {
+        "rental-svc:4000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugin_config_id": "auth-verify",
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/vehicles$1"
+      }
+    },
+    "desc": "Rental vehicles - auth required"
+  }'
+
+4.4. FLEET SERVICE ROUTES
+--------------------------
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/fleet-health \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/fleet/health",
+    "methods": ["GET"],
+    "upstream": {
+      "nodes": {
+        "fleet-svc:4000": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/health"
+      }
+    },
+    "desc": "Fleet service health check"
+  }'
+
+4.5. PAYMENT SERVICE ROUTES
+----------------------------
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/payments-webhook-vnpay \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/payments/api/v1/webhooks/vnpay/*",
+    "methods": ["GET", "POST"],
+    "upstream": {
+      "nodes": {
+        "payment-svc:8082": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/webhooks/vnpay$1"
+      }
+    },
+    "desc": "VNPay webhook - no auth required"
+  }'
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/payments-intents \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/payments/api/v1/payments/intents",
+    "methods": ["POST"],
+    "upstream": {
+      "nodes": {
+        "payment-svc:8082": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugin_config_id": "auth-verify",
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/payments/intents"
+      }
+    },
+    "desc": "Create payment intent - auth required"
+  }'
+
+
+================================================================================
+PHẦN 5: SCRIPT TỰ ĐỘNG HÓA CẤU HÌNH
+================================================================================
+
+5.1. SCRIPT BASH ĐỂ CẤU HÌNH TẤT CẢ
+------------------------------------
+
+Tạo file: setup-apisix.sh
+
+#!/bin/bash
+
+APISIX_ADMIN_URL="http://127.0.0.1:9180"
+APISIX_KEY="edd1c9f034335f136f87ad84b625c8f1"
+
+# 1. Tạo Global CORS
+echo "Setting up Global CORS..."
+curl -X PUT ${APISIX_ADMIN_URL}/apisix/admin/global_rules/cors \
+  -H "X-API-KEY: ${APISIX_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plugins": {
+      "cors": {
+        "allow_origins": "*",
+        "allow_methods": "GET,POST,PUT,DELETE,PATCH,OPTIONS,HEAD",
+        "allow_headers": "Authorization,Content-Type,Accept,Origin,User-Agent,DNT,Cache-Control,X-Mx-ReqToken,X-Requested-With",
+        "expose_headers": "*",
+        "max_age": 3600,
+        "allow_credential": true
+      }
+    },
+    "desc": "Global CORS configuration"
+  }'
+
+# 2. Tạo Plugin Config cho Authentication
+echo "Setting up Auth Plugin Config..."
+curl -X PUT ${APISIX_ADMIN_URL}/apisix/admin/plugin_configs/auth-verify \
+  -H "X-API-KEY: ${APISIX_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plugins": {
+      "serverless-pre-function": {
+        "phase": "rewrite",
+        "functions": [
+          "return function(conf, ctx)\n    local http = require \"resty.http\"\n    local httpc = http.new()\n    local token = ctx.var.http_authorization\n    if not token then\n      ngx.status = 401\n      ngx.say(\"{\\\"error\\\":\\\"Missing Authorization header\\\"}\")\n      ngx.exit(401)\n    end\n    local res, err = httpc:request_uri(\"http://auth-service:8000/api/v1/auth/introspect\", {\n      method = \"GET\",\n      headers = {\n        [\"Authorization\"] = token\n      }\n    })\n    if not res or res.status ~= 200 then\n      ngx.status = 401\n      ngx.say(\"{\\\"error\\\":\\\"Unauthorized\\\"}\")\n      ngx.exit(401)\n    end\n    local cjson = require \"cjson\"\n    local data = cjson.decode(res.body)\n    if not data.active then\n      ngx.status = 401\n      ngx.say(\"{\\\"error\\\":\\\"Token invalid\\\"}\")\n      ngx.exit(401)\n    end\n    ngx.req.set_header(\"X-User-Id\", data.user.id)\n    ngx.req.set_header(\"X-User-Role\", data.user.role)\n  end"
+        ]
+      }
+    },
+    "desc": "Token verification plugin"
+  }'
+
+# 3. Tạo các routes (ví dụ)
+# ... (thêm các routes ở đây)
+
+echo "Setup completed!"
+
+5.2. SCRIPT POWERSHELL CHO WINDOWS
+-----------------------------------
+
+Tạo file: setup-apisix.ps1
+
+$APISIX_ADMIN_URL = "http://127.0.0.1:9180"
+$APISIX_KEY = "edd1c9f034335f136f87ad84b625c8f1"
+
+# 1. Global CORS
+Write-Host "Setting up Global CORS..."
+$corsBody = @{
+    plugins = @{
+        cors = @{
+            allow_origins = "*"
+            allow_methods = "GET,POST,PUT,DELETE,PATCH,OPTIONS,HEAD"
+            allow_headers = "Authorization,Content-Type,Accept,Origin,User-Agent,DNT,Cache-Control,X-Mx-ReqToken,X-Requested-With"
+            expose_headers = "*"
+            max_age = 3600
+            allow_credential = $true
+        }
+    }
+    desc = "Global CORS configuration"
+} | ConvertTo-Json -Depth 10
+
+Invoke-RestMethod -Uri "$APISIX_ADMIN_URL/apisix/admin/global_rules/cors" `
+    -Method PUT `
+    -Headers @{"X-API-KEY"=$APISIX_KEY; "Content-Type"="application/json"} `
+    -Body $corsBody
+
+Write-Host "Setup completed!"
+
+
+================================================================================
+PHẦN 6: KIỂM TRA VÀ DEBUG
+================================================================================
+
+6.1. KIỂM TRA GLOBAL PLUGINS
+-----------------------------
+
+curl http://127.0.0.1:9180/apisix/admin/global_rules \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1"
+
+6.2. KIỂM TRA ROUTES
+---------------------
+
+curl http://127.0.0.1:9180/apisix/admin/routes \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1"
+
+6.3. KIỂM TRA PLUGIN CONFIGS
+-----------------------------
+
+curl http://127.0.0.1:9180/apisix/admin/plugin_configs \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1"
+
+6.4. TEST CORS
+--------------
+
+curl -X OPTIONS http://127.0.0.1:9080/api/v1/users \
+  -H "Origin: http://localhost:3000" \
+  -H "Access-Control-Request-Method: GET" \
+  -v
+
+6.5. TEST AUTHENTICATION
+-------------------------
+
+# Test không có token (sẽ fail):
+curl http://127.0.0.1:9080/api/v1/users \
+  -v
+
+# Test có token hợp lệ:
+curl http://127.0.0.1:9080/api/v1/users \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -v
+
+
+================================================================================
+PHẦN 7: LƯU Ý QUAN TRỌNG VÀ BEST PRACTICES
+================================================================================
+
+7.1. BẢO MẬT
+------------
+- Không để allow_origins = "*" trong production
+- Luôn validate token ở gateway level
+- Sử dụng HTTPS trong production
+- Giới hạn rate limiting cho các endpoints quan trọng
+
+7.2. PERFORMANCE
+-----------------
+- Cache kết quả token verification nếu có thể
+- Sử dụng connection pooling cho auth service
+- Monitor latency của auth introspect endpoint
+
+7.3. ERROR HANDLING
+-------------------
+- Trả về error message rõ ràng cho client
+- Log tất cả authentication failures
+- Có fallback mechanism nếu auth service down
+
+7.4. MONITORING
+---------------
+- Monitor số lượng failed auth requests
+- Track response time của auth introspect
+- Alert khi auth service không available
+
+================================================================================
+KẾT THÚC HƯỚNG DẪN
+================================================================================
+================================================================================
+DANH SÁCH TẤT CẢ STREAMS VÀ API ENDPOINTS CHO CẤU HÌNH APISIX GATEWAY
+EV Station-based Rental System
+================================================================================
+
+LƯU Ý QUAN TRỌNG:
+- Tất cả các API yêu cầu authentication sẽ sử dụng Bearer Token trong header Authorization
+- Endpoint /api/v1/auth/introspect được sử dụng để verify token (cho APISIX auth_request)
+- Health check endpoints không yêu cầu authentication
+- Webhook endpoints (VNPay) không yêu cầu authentication
+
+================================================================================
+1. AUTH SERVICE (Port: 8000 hoặc 8003)
+   Upstream: http://auth-service:8000
+================================================================================
+
+1.1. AUTHENTICATION ENDPOINTS (/api/v1/auth)
+    Base Path: /api/v1/auth
+    Upstream: http://auth-service:8000/api/v1/auth
+
+    POST   /api/v1/auth/register
+    - Authentication: KHÔNG CẦN
+    - Mô tả: Đăng ký user mới
+    
+    POST   /api/v1/auth/login
+    - Authentication: KHÔNG CẦN
+    - Mô tả: Đăng nhập, nhận access token và refresh token
+    
+    POST   /api/v1/auth/refresh
+    - Authentication: KHÔNG CẦN (cần refresh token trong body)
+    - Mô tả: Làm mới access token
+    
+    POST   /api/v1/auth/logout
+    - Authentication: CẦN (Bearer Token)
+    - Mô tả: Đăng xuất
+    
+    GET    /api/v1/auth/introspect
+    - Authentication: CẦN (Bearer Token)
+    - Mô tả: Kiểm tra token (dùng cho APISIX auth_request plugin)
+    - Response: { active: true, user: { id, role } }
+
+1.2. USER MANAGEMENT ENDPOINTS (/api/v1/users)
+    Base Path: /api/v1/users
+    Upstream: http://auth-service:8000/api/v1/users
+
+    GET    /api/v1/users
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: STAFF hoặc ADMIN
+    - Mô tả: Lấy danh sách tất cả users
+    
+    GET    /api/v1/users/stats
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: STAFF hoặc ADMIN
+    - Mô tả: Thống kê users
+    
+    GET    /api/v1/users/registration-stats
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: STAFF hoặc ADMIN
+    - Mô tả: Thống kê đăng ký theo ngày
+    
+    GET    /api/v1/users/:id
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: STAFF hoặc ADMIN
+    - Mô tả: Lấy thông tin user theo ID
+    
+    PUT    /api/v1/users/:id
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: ADMIN
+    - Mô tả: Cập nhật thông tin user
+    
+    PUT    /api/v1/users/profile/me
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: USER (bất kỳ user nào)
+    - Mô tả: Cập nhật profile của chính mình
+    
+    DELETE /api/v1/users/:id
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: USER (chính mình) hoặc ADMIN
+    - Mô tả: Xóa user
+    
+    POST   /api/v1/users/:id/verify-onsite
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: STAFF hoặc ADMIN
+    - Mô tả: Xác thực user tại chỗ
+    
+    GET    /api/v1/users/:id/verification-logs
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: STAFF hoặc ADMIN
+    - Mô tả: Lấy lịch sử xác thực    chờ trạm ================================
+
+1.3. DOCUMENT MANAGEMENT ENDPOINTS (/api/v1/documents)
+    Base Path: /api/v1/documents
+    Upstream: http://auth-service:8000/api/v1/documents
+
+    GET    /api/v1/documents/pending
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: ADMIN
+    - Mô tả: Lấy danh sách documents chờ duyệt
+    
+    GET    /api/v1/documents/stats
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: ADMIN
+    - Mô tả: Thống kê documents
+    
+    GET    /api/v1/documents/user/:userId
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: USER (bất kỳ user nào)
+    - Mô tả: Lấy documents của user
+    
+    GET    /api/v1/documents/:id
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: USER (bất kỳ user nào)
+    - Mô tả: Lấy document theo ID ggg
+    
+    POST   /api/v1/documents
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: USER (bất kỳ user nào)
+    - Mô tả: Tạo document mới
+    
+    PATCH  /api/v1/documents/:id/status
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: ADMIN
+    - Mô tả: Cập nhật trạng thái document
+    
+    DELETE /api/v1/documents/:id
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: USER (chính mình) hoặc ADMIN
+    - Mô tả: Xóa document
+
+1.4. COMPLAINT MANAGEMENT ENDPOINTS (/api/v1/complaints)
+    Base Path: /api/v1/complaints
+    Upstream: http://auth-backend:8000/api/v1/complaints
+
+    POST   /api/v1/complaints
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: USER (bất kỳ user nào)
+    - Mô tả: Tạo complaint mới
+    
+    GET    /api/v1/complaints/stats
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: STAFF hoặc ADMIN
+    - Mô tả: Thống kê complaints
+    
+    GET    /api/v1/complaints/renter/:renterId
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: USER (bất kỳ user nào)
+    - Mô tả: Lấy complaints của renter
+    
+    GET    /api/v1/complaints
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: STAFF hoặc ADMIN
+    - Mô tả: Lấy tất cả complaints
+    
+    GET    /api/v1/complaints/:id
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: STAFF hoặc ADMIN
+    - Mô tả: Lấy complaint theo ID
+    
+    PUT    /api/v1/complaints/:id
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: STAFF hoặc ADMIN
+    - Mô tả: Cập nhật complaint
+    
+    DELETE /api/v1/complaints/:id
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: ADMIN
+    - Mô tả: Xóa complaint
+
+1.5. STATION PROXY ENDPOINTS (/api/v1/stations)
+    Base Path: /api/v1/stations
+    Upstream: http://auth-service:8000/api/v1/stations
+
+    GET    /api/v1/stations
+    - Authentication: CẦN (Bearer Token) - Optional (có thể không cần)
+    - Mô tả: Proxy đến fleet service để lấy danh sách stations
+
+1.6. UPLOAD ENDPOINTS (/api/v1/upload)
+    Base Path: /api/v1/upload
+    Upstream: http://auth-service:8000/api/v1/upload
+
+    POST   /api/v1/upload/document
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: USER (bất kỳ user nào)
+    - Content-Type: multipart/form-data
+    - Mô tả: Upload document=============================
+
+1.7. HEALTH CHECK
+    GET    /health
+    - Authentication: KHÔNG CẦN
+    - Upstream: http://auth-service:8000/health
+
+================================================================================
+2. BOOKING SERVICES
+================================================================================
+
+2.1. RENTAL SERVICE (Port: 3002 hoặc 4000)
+    Base Path: /rental
+    Upstream: http://rental-svc:4000
+
+    GET    /rental/health
+    - Authentication: KHÔNG CẦN
+    - Upstream: http://rental-svc:4000/health
+
+    GET    /rental/api/v1/stations
+    - Authentication: KHÔNG CẦN
+    - Upstream: http://rental-svc:4000/api/v1/stations
+    - Mô tả: Lấy danh sách stations
+    
+    GET    /rental/api/v1/stations/:id
+    - Authentication: KHÔNG CẦN
+    - Upstream: http://rental-svc:4000/api/v1/stations/:id
+    - Mô tả: Lấy station theo ID
+    
+    POST   /rental/api/v1/stations
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://rental-svc:4000/api/v1/stations
+    - Mô tả: Tạo station mới
+    
+    PUT    /rental/api/v1/stations/:id
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://rental-svc:4000/api/v1/stations/:id
+    - Mô tả: Cập nhật station
+    
+    DELETE /rental/api/v1/stations/:id
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://rental-svc:4000/api/v1/stations/:id
+    - Mô tả: Xóa station
+
+    GET    /rental/api/v1/vehicles
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: RENTER, STAFF, hoặc ADMIN
+    - Upstream: http://rental-svc:4000/api/v1/vehicles
+    - Query params: stationId, available
+    - Mô tả: Lấy danh sách vehicles (cho rental)
+    
+    GET    /rental/api/v1/vehicles/:id
+    - Authentication: CẦN (Bearer Token)
+    - Role Required: RENTER, STAFF, hoặc ADMIN
+    - Upstream: http://rental-svc:4000/api/v1/vehicles/:id
+    - Mô tả: Lấy vehicle theo ID
+
+    GET    /rental/api/v1/bookings
+    - Authentication: KHÔNG CẦN (có thể thêm sau)
+    - Upstream: http://rental-svc:4000/api/v1/bookings
+    - Mô tả: Lấy danh sách bookings
+    
+    POST   /rental/api/v1/bookings
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://rental-svc:4000/api/v1/bookings
+    - Body: { vehicleId, stationId, userId, startTime, estDurationH }
+    - Mô tả: Tạo booking mới
+    
+    POST   /rental/api/v1/bookings/:id/mark-paid
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://rental-svc:4000/api/v1/bookings/:id/mark-paid
+    - Body: { paymentId }
+    - Mô tả: Đánh dấu booking đã thanh toán
+    
+    PATCH  /rental/api/v1/bookings/:id/return
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://rental-svc:4000/api/v1/bookings/:id/return
+    - Mô tả: Trả xe
+
+2.2. FLEET SERVICE (Port: 3003 hoặc 4000)
+    Base Path: /fleet
+    Upstream: http://fleet-svc:4000
+
+    GET    /fleet/health
+    - Authentication: KHÔNG CẦN
+    - Upstream: http://fleet-svc:4000/health
+
+    GET    /fleet/api/v1/vehicles
+    - Authentication: KHÔNG CẦN (có thể thêm sau)
+    - Upstream: http://fleet-svc:4000/api/v1/vehicles
+    - Mô tả: Lấy danh sách vehicles (quản lý đội xe)
+    
+    GET    /fleet/api/v1/vehicles/:id
+    - Authentication: KHÔNG CẦN (có thể thêm sau)
+    - Upstream: http://fleet-svc:4000/api/v1/vehicles/:id
+    - Mô tả: Lấy vehicle theo ID
+    
+    POST   /fleet/api/v1/vehicles
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://fleet-svc:4000/api/v1/vehicles
+    - Body: { id, name, stationId, plate, type, isAvailable, batteryLevel, healthStatus, pricePerDay, imageUrl, description }
+    - Mô tả: Tạo vehicle mới
+    
+    PUT    /fleet/api/v1/vehicles/:id/status
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://fleet-svc:4000/api/v1/vehicles/:id/status
+    - Body: { isAvailable, batteryLevel, healthStatus, pricePerDay, name, imageUrl, description }
+    - Mô tả: Cập nhật trạng thái vehicle
+    
+    DELETE /fleet/api/v1/vehicles/:key
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://fleet-svc:4000/api/v1/vehicles/:key
+    - Mô tả: Xóa vehicle (có thể dùng id hoặc plate)
+
+    GET    /fleet/api/v1/incidents
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://fleet-svc:4000/api/v1/incidents
+    - Mô tả: Lấy danh sách incidents
+    
+    POST   /fleet/api/v1/incidents
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://fleet-svc:4000/api/v1/incidents
+    - Body: { vehicleId, stationId, reporterId, severity, desc, photos }
+    - Mô tả: Báo cáo sự cố
+
+    GET    /fleet/api/v1/overview
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://fleet-svc:4000/api/v1/overview
+    - Mô tả: Tổng quan đội xe
+
+    POST   /fleet/api/v1/uploads/presign
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://fleet-svc:4000/api/v1/uploads/presign
+    - Body: { contentType, fileName, prefix }
+    - Mô tả: Tạo presigned URL để upload ảnh
+
+2.3. ADMIN SERVICE (Port: 3001 hoặc 4000)
+    Base Path: /admin
+    Upstream: http://admin-svc:4000
+
+    GET    /admin/health
+    - Authentication: KHÔNG CẦN
+    - Upstream: http://admin-svc:4000/health
+
+    GET    /admin/
+    - Authentication: KHÔNG CẦN
+    - Upstream: http://admin-svc:4000/
+    - Mô tả: Thông tin service
+
+    GET    /admin/admin/vehicles
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://admin-svc:4000/admin/vehicles
+    - Mô tả: Danh sách xe (admin view)
+    
+    GET    /admin/admin/reports
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://admin-svc:4000/admin/reports
+    - Mô tả: Danh sách báo cáo
+    
+    PUT    /admin/admin/reports/:id
+    - Authentication: CẦN (Bearer Token) - Recommended
+    - Upstream: http://admin-svc:4000/admin/reports/:id
+    - Body: { resolved: true }
+    - Mô tả: Xử lý báo cáo
+
+================================================================================
+3. BILLING SERVICES
+================================================================================
+
+3.1. PAYMENT SERVICE (Port: 8082)
+    Base Path: /payments
+    Upstream: http://payment-svc:8082
+
+    GET    /payments/api/v1/health
+    - Authentication: KHÔNG CẦN
+    - Upstream: http://payment-svc:8082/api/v1/health
+
+    POST   /payments/api/v1/payments/intents
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://payment-svc:8082/api/v1/payments/intents
+    - Body: { bookingId, renterId, stationId, amount, method, type, description }
+    - Mô tả: Tạo payment intent
+    
+    GET    /payments/api/v1/payments/:id
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://payment-svc:8082/api/v1/payments/:id
+    - Mô tả: Lấy payment theo ID
+    
+    POST   /payments/api/v1/payments/:id/cancel
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://payment-svc:8082/api/v1/payments/:id/cancel
+    - Mô tả: Hủy payment
+    
+    POST   /payments/api/v1/payments/:id/refund
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://payment-svc:8082/api/v1/payments/:id/refund
+    - Body: { amount }
+    - Mô tả: Hoàn tiền
+    
+    GET    /payments/api/v1/payments
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://payment-svc:8082/api/v1/payments
+    - Query params: bookingId, status, limit, offset
+    - Mô tả: Query payments
+
+    POST   /payments/api/v1/deposits/hold
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://payment-svc:8082/api/v1/deposits/hold
+    - Body: { bookingId, renterId, stationId, amount, method }
+    - Mô tả: Giữ tiền cọc
+    
+    POST   /payments/api/v1/deposits/:id/release
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://payment-svc:8082/api/v1/deposits/:id/release
+    - Body: { amountRelease }
+    - Mô tả: Giải phóng tiền cọc
+    
+    POST   /payments/api/v1/deposits/:id/forfeit
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://payment-svc:8082/api/v1/deposits/:id/forfeit
+    - Body: { amount }
+    - Mô tả: Tịch thu tiền cọc
+
+    POST   /payments/api/v1/pos/collect
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://payment-svc:8082/api/v1/pos/collect
+    - Body: { bookingId, stationId, amount, method, type }
+    - Mô tả: Thu tiền tại POS (Point of Sale)
+
+    GET    /payments/api/v1/webhooks/vnpay/return
+    - Authentication: KHÔNG CẦN (Webhook từ VNPay)
+    - Upstream: http://payment-svc:8082/api/v1/webhooks/vnpay/return
+    - Query params: vnp_Amount, vnp_BankCode, vnp_BankTranNo, ...
+    - Mô tả: VNPay return callback
+    
+    GET    /payments/api/v1/webhooks/vnpay/ipn
+    - Authentication: KHÔNG CẦN (Webhook từ VNPay)
+    - Upstream: http://payment-svc:8082/api/v1/webhooks/vnpay/ipn
+    - Query params: vnp_Amount, vnp_BankCode, vnp_BankTranNo, ...
+    - Mô tả: VNPay IPN (Instant Payment Notification)
+
+    GET    /payments/api/v1/public/*
+    - Authentication: KHÔNG CẦN
+    - Upstream: http://payment-svc:8082/api/v1/public/*
+    - Mô tả: Public endpoints (nếu có)
+
+    GET    /payments/metrics
+    - Authentication: KHÔNG CẦN (Prometheus metrics)
+    - Upstream: http://payment-svc:8082/metrics
+
+3.2. ANALYTICS SERVICE (Port: 8083)
+    Base Path: /analytics
+    Upstream: http://analytics-svc:8083
+
+    GET    /analytics/api/v1/health
+    - Authentication: KHÔNG CẦN
+    - Upstream: http://analytics-svc:8083/api/v1/health
+
+    GET    /analytics/api/v1/analytics/revenue
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://analytics-svc:8083/api/v1/analytics/revenue
+    - Query params: stationId, from, to, granularity
+    - Mô tả: Phân tích doanh thu
+    
+    GET    /analytics/api/v1/analytics/utilization
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://analytics-svc:8083/api/v1/analytics/utilization
+    - Query params: stationId, from, to, granularity
+    - Mô tả: Phân tích mức độ sử dụng
+    
+    GET    /analytics/api/v1/analytics/peak-hours
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://analytics-svc:8083/api/v1/analytics/peak-hours
+    - Query params: stationId, from, to, granularity
+    - Mô tả: Phân tích giờ cao điểm
+    
+    GET    /analytics/api/v1/analytics/user/:userId/overview
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://analytics-svc:8083/api/v1/analytics/user/:userId/overview
+    - Mô tả: Tổng quan user
+    
+    GET    /analytics/api/v1/analytics/demand-forecast
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://analytics-svc:8083/api/v1/analytics/demand-forecast
+    - Query params: stationId, horizonDays
+    - Mô tả: Dự báo nhu cầu
+
+    GET    /analytics/api/v1/reports/stations
+    - Authentication: CẦN (Bearer Token)
+    - Upstream: http://analytics-svc:8083/api/v1/reports/stations
+    - Query params: date, format
+    - Mô tả: Báo cáo stations
+
+    GET    /analytics/metrics
+    - Authentication: KHÔNG CẦN (Prometheus metrics)
+    - Upstream: http://analytics-svc:8083/metrics
+
+================================================================================
+4. CẤU HÌNH APISIX GATEWAY - HƯỚNG DẪN
+================================================================================
+
+4.1. AUTHENTICATION CONFIGURATION
+    - Sử dụng plugin: auth_request hoặc openid-connect
+    - Auth endpoint: http://auth-service:8000/api/v1/auth/introspect
+    - Header forward: Authorization header từ client đến upstream
+    - Cấu hình trong config.yaml đã có sẵn:
+      proxy_set_header Authorization $http_authorization;
+      proxy_pass_request_headers on;
+
+4.2. ROUTES CẦN BẢO VỆ BẰNG AUTHENTICATION
+    Tất cả các routes có ghi chú "CẦN (Bearer Token)" cần được bảo vệ bằng:
+    - Plugin: auth_request hoặc openid-connect
+    - Hoặc sử dụng forward-auth pattern
+
+4.3. ROUTES KHÔNG CẦN AUTHENTICATION
+    - Health check endpoints (/health, /api/v1/health)
+    - Public auth endpoints (/api/v1/auth/register, /api/v1/auth/login, /api/v1/auth/refresh)
+    - Webhook endpoints (/payments/api/v1/webhooks/*)
+    - Metrics endpoints (/metrics)
+
+4.4. UPSTREAM SERVICES MAPPING
+    auth-service:8000    -> Auth Service
+    rental-svc:4000      -> Rental Service
+    fleet-svc:4000        -> Fleet Service
+    admin-svc:4000       -> Admin Service
+    payment-svc:8082     -> Payment Service
+    analytics-svc:8083   -> Analytics Service
+
+4.5. RECOMMENDED ROUTE PATTERNS
+    - /api/v1/auth/*          -> Auth Service (một số không cần auth)
+    - /api/v1/users/*          -> Auth Service (cần auth)
+    - /api/v1/documents/*     -> Auth Service (cần auth)
+    - /api/v1/complaints/*    -> Auth Service (cần auth)
+    - /api/v1/stations         -> Auth Service (proxy) hoặc Rental Service
+    - /api/v1/upload/*        -> Auth Service (cần auth)
+    - /rental/*                -> Rental Service
+    - /fleet/*                 -> Fleet Service
+    - /admin/*                 -> Admin Service
+    - /payments/*              -> Payment Service
+    - /analytics/*             -> Analytics Service
+
+================================================================================
+5. STREAM CONFIGURATION (Nếu cần TCP/UDP streams)
+================================================================================
+
+Hiện tại hệ thống chủ yếu sử dụng HTTP/HTTPS APIs, không có TCP/UDP streams
+được định nghĩa. Nếu có RabbitMQ hoặc các message queue khác cần stream,
+có thể cấu hình thêm sau.
+
+================================================================================
+KẾT THÚC TÀI LIỆU
+================================================================================
+

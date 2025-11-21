@@ -58,15 +58,39 @@ export const getComplaintById = async ({ complaintId, accessToken } = {}) => {
 
 // Get complaints by renter ID (User can see their own, STAFF/ADMIN can see all)
 export const getComplaintsByRenterId = async ({ renterId, accessToken } = {}) => {
-  const config = {};
-  if (accessToken) {
-    config.headers = {
-      Authorization: `Bearer ${accessToken}`,
-    };
+  if (!accessToken) {
+    console.warn('getComplaintsByRenterId - No access token provided!');
+    throw new Error('Access token is required');
   }
 
-  const response = await apiClient.get(`/complaints/renter/${renterId}`, config);
-  return response.data;
+  console.log('getComplaintsByRenterId - Sending request:', {
+    renterId,
+    hasToken: !!accessToken,
+    tokenPrefix: accessToken ? accessToken.substring(0, 20) + '...' : 'none'
+  });
+
+  try {
+    const response = await apiClient.get(`/complaints/renter/${renterId}`, {
+      headers: { 
+        Authorization: `Bearer ${accessToken}` 
+      }
+    });
+    console.log('getComplaintsByRenterId - Response:', response.status, response.data);
+    return response.data;
+  } catch (error) {
+    console.error('getComplaintsByRenterId - Error:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        headers: error.config?.headers
+      }
+    });
+    throw error;
+  }
 };
 
 // Update complaint (STAFF/ADMIN only)

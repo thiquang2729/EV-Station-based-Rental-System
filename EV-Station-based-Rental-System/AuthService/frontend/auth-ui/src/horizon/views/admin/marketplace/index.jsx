@@ -96,7 +96,32 @@ export default function EditUser() {
     try {
       setLoading(true);
       const response = await userService.getUserById({ userId, accessToken });
-      const user = response.data || response;
+      console.log("User response:", response); // Debug log
+      console.log("Response.data:", response.data); // Debug log
+      
+      // Backend trả về: { success: true, message: "...", data: {...} }
+      // Axios response structure: response.data = { success: true, message: "...", data: {...} }
+      let user = null;
+      
+      // Xử lý các trường hợp response structure khác nhau
+      if (response.data?.data) {
+        // Case 1: response.data = { success: true, data: {...} }
+        user = Array.isArray(response.data.data) ? response.data.data[0] : response.data.data;
+      } else if (response.data) {
+        // Case 2: response.data là object hoặc array trực tiếp
+        user = Array.isArray(response.data) ? response.data[0] : response.data;
+      } else {
+        // Case 3: response chính là user object
+        user = Array.isArray(response) ? response[0] : response;
+      }
+      
+      console.log("Extracted user data:", user); // Debug log
+      
+      // Validate user object
+      if (!user || (typeof user === 'object' && !user.id)) {
+        console.error("Invalid user data structure:", { user, response });
+        throw new Error("Không tìm thấy thông tin người dùng");
+      }
       
       setUserData(user);
       setFormData({
@@ -109,10 +134,11 @@ export default function EditUser() {
       // Load documents
       loadDocuments();
     } catch (error) {
+      console.error("Load user data error:", error); // Debug log
       toast({
         status: "error",
         title: "Lỗi",
-        description: error.response?.data?.message || "Không thể tải thông tin người dùng",
+        description: error.response?.data?.message || error.message || "Không thể tải thông tin người dùng",
         duration: 4000,
         isClosable: true,
         position: "bottom-right",
@@ -301,7 +327,7 @@ export default function EditUser() {
                 Email
               </Text>
               <Text color={textColor} fontSize="md" fontWeight="600">
-                {userData.email}
+                {userData.email || "N/A"}
               </Text>
             </Box>
 

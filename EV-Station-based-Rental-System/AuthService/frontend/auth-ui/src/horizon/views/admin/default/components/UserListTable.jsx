@@ -201,12 +201,66 @@ export default function UserListTable() {
       // Load user details
       const userResponse = await userService.getUserById({ userId: user.id, accessToken });
       console.log('User details response:', userResponse);
-      console.log('User riskStatus:', userResponse.data?.data?.riskStatus || userResponse.data?.riskStatus || userResponse.riskStatus);
-      setUserDetails(userResponse.data?.data || userResponse.data || userResponse);
+      console.log('Response.data:', userResponse.data);
+      
+      // Xử lý các trường hợp response structure khác nhau
+      let userDetails = null;
+      
+      if (userResponse.data?.data) {
+        // Case 1: response.data = { success: true, data: {...} }
+        const extracted = userResponse.data.data;
+        if (Array.isArray(extracted)) {
+          // Nếu là array, tìm user theo ID
+          userDetails = extracted.find(u => u.id === user.id) || extracted[0];
+        } else {
+          userDetails = extracted;
+        }
+      } else if (userResponse.data) {
+        // Case 2: response.data là object hoặc array trực tiếp
+        const extracted = userResponse.data;
+        if (Array.isArray(extracted)) {
+          // Nếu là array, tìm user theo ID
+          userDetails = extracted.find(u => u.id === user.id) || extracted[0];
+        } else {
+          userDetails = extracted;
+        }
+      } else {
+        // Case 3: response chính là user object hoặc array
+        if (Array.isArray(userResponse)) {
+          userDetails = userResponse.find(u => u.id === user.id) || userResponse[0];
+        } else {
+          userDetails = userResponse;
+        }
+      }
+      
+      console.log('Extracted user details:', userDetails);
+      console.log('All userDetails keys:', userDetails ? Object.keys(userDetails) : 'null');
+      console.log('Phone number:', userDetails?.phoneNumber, 'Type:', typeof userDetails?.phoneNumber);
+      console.log('Phone_number (snake_case):', userDetails?.phone_number);
+      
+      if (!userDetails || (typeof userDetails === 'object' && !userDetails.id)) {
+        console.error("Invalid user details structure:", { userDetails, userResponse });
+        throw new Error("Không tìm thấy thông tin người dùng");
+      }
+      
+      // Đảm bảo phoneNumber được set đúng (có thể là null, undefined, hoặc empty string)
+      // Kiểm tra cả camelCase và snake_case
+      if (!userDetails.phoneNumber && userDetails.phone_number) {
+        userDetails.phoneNumber = userDetails.phone_number;
+      }
+      if (!userDetails.phoneNumber && userDetails.phone) {
+        userDetails.phoneNumber = userDetails.phone;
+      }
+      
+      console.log('Final phoneNumber:', userDetails.phoneNumber);
+      
+      setUserDetails(userDetails);
 
       // Load user documents
       const docsResponse = await getDocumentsByUserId({ userId: user.id, accessToken });
-      setUserDocuments(docsResponse.data || []);
+      // Xử lý documents response tương tự
+      const documents = Array.isArray(docsResponse.data) ? docsResponse.data : (docsResponse.data?.data || docsResponse.data || []);
+      setUserDocuments(documents);
 
       // Load verification logs
       const logsResponse = await fetch(buildApiUrl(`/api/v1/users/${user.id}/verification-logs`), {
@@ -217,14 +271,16 @@ export default function UserListTable() {
       });
       if (logsResponse.ok) {
         const logsData = await logsResponse.json();
-        setVerificationLogs(logsData.data || []);
+        // Xử lý logs response tương tự
+        const logs = Array.isArray(logsData.data) ? logsData.data : (logsData.data?.data || logsData.data || []);
+        setVerificationLogs(logs);
       }
     } catch (error) {
       console.error("Error loading user details:", error);
       toast({
         status: "error",
         title: "Lỗi",
-        description: "Không thể tải thông tin người dùng",
+        description: error.message || "Không thể tải thông tin người dùng",
         duration: 3000,
         isClosable: true,
       });
@@ -449,6 +505,7 @@ export default function UserListTable() {
                 user={user}
                 onView={handleViewUser}
                 onEdit={handleEditClick}
+                onDelete={handleDeleteClick}
                 onVerify={(u) => (isAdminStrict ? handleAdminVerify(u) : handleVerifyOnsite(u))}
                 isAdminStrict={isAdminStrict}
                 deleteStatus={deleteStatus}

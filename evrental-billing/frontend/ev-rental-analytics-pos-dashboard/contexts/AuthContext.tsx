@@ -1,5 +1,6 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import { User, UserRole } from '../types';
+import { getUserFromToken } from '../utils/jwt';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -53,16 +54,93 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       return;
     }
 
-    const token = localStorage.getItem('accessToken');
+    // Try to get token from multiple sources (compatibility with auth frontend)
+    let token = localStorage.getItem('accessToken');
+    let userInfo: any = null;
+    
+    // Check if auth frontend stored token in 'auth_state' (Redux persist)
+    if (!token) {
+      const authState = localStorage.getItem('auth_state');
+      if (authState) {
+        try {
+          const parsed = JSON.parse(authState);
+          token = parsed.accessToken;
+          if (parsed.user) {
+            userInfo = parsed.user;
+          }
+        } catch (e) {
+          console.warn('Failed to parse auth_state:', e);
+        }
+      }
+    }
+    
     if (token) {
-      // Verify token with backend
-      verifyToken(token);
+      // Decode token to get user info
+      const tokenUser = getUserFromToken(token);
+      if (tokenUser) {
+        // Priority 1: Use fullName from token (if available)
+        if (tokenUser.fullName) {
+          setCurrentUser({
+            id: tokenUser.id,
+            name: tokenUser.fullName,
+            role: tokenUser.role as UserRole
+          });
+          // Save to localStorage for consistency
+          localStorage.setItem('userInfo', JSON.stringify({
+            fullName: tokenUser.fullName,
+            name: tokenUser.fullName
+          }));
+          return;
+        }
+        
+        // Priority 2: If we have user info from auth_state, use it
+        if (userInfo && userInfo.fullName) {
+          setCurrentUser({
+            id: tokenUser.id,
+            name: userInfo.fullName,
+            role: tokenUser.role as UserRole
+          });
+          // Save to our format for consistency
+          localStorage.setItem('userInfo', JSON.stringify({
+            fullName: userInfo.fullName,
+            name: userInfo.fullName
+          }));
+          // Also save token in our format
+          localStorage.setItem('accessToken', token);
+          return;
+        }
+        
+        // Priority 3: Try to get full user info from localStorage
+        const savedUserInfo = localStorage.getItem('userInfo');
+        if (savedUserInfo) {
+          try {
+            const saved = JSON.parse(savedUserInfo);
+            setCurrentUser({
+              id: tokenUser.id,
+              name: saved.fullName || saved.name || 'User',
+              role: tokenUser.role as UserRole
+            });
+          } catch (e) {
+            // If saved info is invalid, fetch from API
+            fetchUserInfo(tokenUser.id, token);
+          }
+        } else {
+          // Priority 4: Fetch user info from API
+          fetchUserInfo(tokenUser.id, token);
+        }
+      } else {
+        // Token invalid, clear it
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('auth_state');
+      }
     }
   }, []);
 
-  const verifyToken = async (token: string) => {
+  const fetchUserInfo = async (userId: string, token: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/verify`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/users/${userId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -71,21 +149,43 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       });
 
       if (response.ok) {
-        const userData = await response.json();
-        setCurrentUser({
-          id: userData.id,
-          name: userData.fullName,
+        const data = await response.json();
+        const userData = data.data || data;
+        const userInfo = {
+          id: userData.id || userId,
+          name: userData.fullName || userData.name || 'User',
           role: userData.role as UserRole
-        });
+        };
+        
+        // Save user info to localStorage
+        localStorage.setItem('userInfo', JSON.stringify({
+          fullName: userInfo.name,
+          name: userInfo.name
+        }));
+        
+        setCurrentUser(userInfo);
       } else {
-        // Token invalid, clear it
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        // If API fails, use token info only
+        const tokenUser = getUserFromToken(token);
+        if (tokenUser) {
+          setCurrentUser({
+            id: tokenUser.id,
+            name: 'User', // Fallback name
+            role: tokenUser.role as UserRole
+          });
+        }
       }
     } catch (error) {
-      console.error('Token verification failed:', error);
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      console.error('Failed to fetch user info:', error);
+      // Fallback to token info only
+      const tokenUser = getUserFromToken(token);
+      if (tokenUser) {
+        setCurrentUser({
+          id: tokenUser.id,
+          name: 'User', // Fallback name
+          role: tokenUser.role as UserRole
+        });
+      }
     }
   };
 
@@ -117,10 +217,20 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         
+        // Decode token to get fullName (if included in token)
+        const tokenUser = getUserFromToken(accessToken);
+        const userName = tokenUser?.fullName || user.fullName;
+        
+        // Store user info for later use
+        localStorage.setItem('userInfo', JSON.stringify({
+          fullName: userName,
+          name: userName
+        }));
+        
         // Set user in context
         setCurrentUser({
           id: user.id,
-          name: user.fullName,
+          name: userName,
           role: user.role as UserRole
         });
       } else {
@@ -142,9 +252,11 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       return;
     }
 
-    // Clear tokens
+    // Clear tokens and user info from all possible storage keys
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('userInfo');
+    localStorage.removeItem('auth_state'); // Clear auth frontend's storage too
     
     // Clear user state
     setCurrentUser(null);

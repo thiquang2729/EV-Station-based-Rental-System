@@ -6,6 +6,7 @@ export default function UserCard({
   user,
   onView,
   onEdit,
+  onDelete,
   onVerify,
   isAdminStrict,
   deleteStatus,
@@ -106,7 +107,7 @@ export default function UserCard({
                 variant="outline"
                 onClick={() => {
                   /* Cha sẽ xử lý mở dialog xóa */
-                  onEdit && onEdit(user.id);
+                  onDelete && onDelete(user.id);
                 }}
                 isLoading={deleteStatus === "loading" && deleteUserId === user.id}
                 flex="1"

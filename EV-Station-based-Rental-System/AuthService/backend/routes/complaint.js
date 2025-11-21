@@ -7,6 +7,17 @@ const {
 
 const router = require("express").Router();
 
+// Debug middleware to trace complaint routes
+router.use((req, res, next) => {
+  console.log("[ComplaintRoute]", {
+    method: req.method,
+    originalUrl: req.originalUrl,
+    baseUrl: req.baseUrl,
+    path: req.path,
+  });
+  next();
+});
+
 // CREATE COMPLAINT (any authenticated user can create)
 router.post("/", verifyToken, customerComplaintController.createComplaint);
 

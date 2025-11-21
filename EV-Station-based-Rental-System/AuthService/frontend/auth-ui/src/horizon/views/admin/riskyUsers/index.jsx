@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Box, SimpleGrid, Spinner, Text, useColorModeValue, Flex, useDisclosure, Badge } from "@chakra-ui/react";
 import { useSelector } from "react-redux";
 import userService from "@/services/userService";
+import { getDocumentsByUserId } from "@/services/documentService";
+import { buildApiUrl } from "@/config/apiConfig";
 import UserCard from "views/admin/default/components/UserCard";
 import UserDetailsModal from "views/admin/default/components/UserDetailsModal";
 
@@ -19,6 +21,8 @@ export default function RiskyUsersPage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
+  const [userDocuments, setUserDocuments] = useState([]);
+  const [verificationLogs, setVerificationLogs] = useState([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
   useEffect(() => {
@@ -31,9 +35,26 @@ export default function RiskyUsersPage() {
         ]);
         console.log('Banned response:', bannedRes);
         console.log('Warned response:', warnedRes);
-        setBannedUsers(bannedRes.data || bannedRes || []);
-        setWarnedUsers(warnedRes.data || warnedRes || []);
+        
+        // Xử lý response structure: { success: true, data: [...], pagination: {...} }
+        let bannedUsersList = [];
+        if (bannedRes?.data) {
+          bannedUsersList = Array.isArray(bannedRes.data) ? bannedRes.data : [];
+        } else if (Array.isArray(bannedRes)) {
+          bannedUsersList = bannedRes;
+        }
+        
+        let warnedUsersList = [];
+        if (warnedRes?.data) {
+          warnedUsersList = Array.isArray(warnedRes.data) ? warnedRes.data : [];
+        } else if (Array.isArray(warnedRes)) {
+          warnedUsersList = warnedRes;
+        }
+        
+        setBannedUsers(bannedUsersList);
+        setWarnedUsers(warnedUsersList);
       } catch (e) {
+        console.error('Error loading risky users:', e);
         setBannedUsers([]);
         setWarnedUsers([]);
       } finally {
@@ -51,10 +72,89 @@ export default function RiskyUsersPage() {
     try {
       const res = await userService.getUserById({ userId: user.id, accessToken });
       console.log('Risky user details response:', res);
-      console.log('Risky user riskStatus:', res.data?.data?.riskStatus || res.data?.riskStatus || res.riskStatus);
-      setUserDetails(res.data?.data || res.data || res);
+      console.log('Response.data:', res.data);
+      
+      // Xử lý các trường hợp response structure khác nhau
+      let userDetails = null;
+      
+      if (res.data?.data) {
+        // Case 1: response.data = { success: true, data: {...} }
+        const extracted = res.data.data;
+        if (Array.isArray(extracted)) {
+          // Nếu là array, tìm user theo ID
+          userDetails = extracted.find(u => u.id === user.id) || extracted[0];
+        } else {
+          userDetails = extracted;
+        }
+      } else if (res.data) {
+        // Case 2: response.data là object hoặc array trực tiếp
+        const extracted = res.data;
+        if (Array.isArray(extracted)) {
+          // Nếu là array, tìm user theo ID
+          userDetails = extracted.find(u => u.id === user.id) || extracted[0];
+        } else {
+          userDetails = extracted;
+        }
+      } else {
+        // Case 3: response chính là user object hoặc array
+        if (Array.isArray(res)) {
+          userDetails = res.find(u => u.id === user.id) || res[0];
+        } else {
+          userDetails = res;
+        }
+      }
+      
+      console.log('Extracted risky user details:', userDetails);
+      
+      if (!userDetails || (typeof userDetails === 'object' && !userDetails.id)) {
+        console.error("Invalid user details structure:", { userDetails, res });
+        throw new Error("Không tìm thấy thông tin người dùng");
+      }
+      
+      // Đảm bảo phoneNumber được set đúng
+      if (!userDetails.phoneNumber && userDetails.phone_number) {
+        userDetails.phoneNumber = userDetails.phone_number;
+      }
+      if (!userDetails.phoneNumber && userDetails.phone) {
+        userDetails.phoneNumber = userDetails.phone;
+      }
+      
+      setUserDetails(userDetails);
+
+      // Load user documents
+      try {
+        const docsResponse = await getDocumentsByUserId({ userId: user.id, accessToken });
+        const documents = Array.isArray(docsResponse.data) ? docsResponse.data : (docsResponse.data?.data || docsResponse.data || []);
+        setUserDocuments(documents);
+      } catch (docsError) {
+        console.error('Error loading documents:', docsError);
+        setUserDocuments([]);
+      }
+
+      // Load verification logs
+      try {
+        const logsResponse = await fetch(buildApiUrl(`/api/v1/users/${user.id}/verification-logs`), {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (logsResponse.ok) {
+          const logsData = await logsResponse.json();
+          const logs = Array.isArray(logsData.data) ? logsData.data : (logsData.data?.data || logsData.data || []);
+          setVerificationLogs(logs);
+        } else {
+          setVerificationLogs([]);
+        }
+      } catch (logsError) {
+        console.error('Error loading verification logs:', logsError);
+        setVerificationLogs([]);
+      }
     } catch (e) {
+      console.error('Error loading risky user details:', e);
       setUserDetails(null);
+      setUserDocuments([]);
+      setVerificationLogs([]);
     } finally {
       setLoadingDetails(false);
     }
@@ -101,6 +201,7 @@ export default function RiskyUsersPage() {
                   user={u}
                   onView={openView}
                   onEdit={() => {}}
+                  onDelete={() => {}}
                   onVerify={() => {}}
                   isAdminStrict={false}
                   deleteStatus={"idle"}
@@ -120,6 +221,7 @@ export default function RiskyUsersPage() {
                   user={u}
                   onView={openView}
                   onEdit={() => {}}
+                  onDelete={() => {}}
                   onVerify={() => {}}
                   isAdminStrict={false}
                   deleteStatus={"idle"}
@@ -140,8 +242,8 @@ export default function RiskyUsersPage() {
         onClose={onClose}
         loading={loadingDetails}
         userDetails={userDetails}
-        userDocuments={[]}
-        verificationLogs={[]}
+        userDocuments={userDocuments}
+        verificationLogs={verificationLogs}
         ui={{ textColor, textColorSecondary, borderColor, brandColor }}
         helpers={{
           getVerificationBadge,

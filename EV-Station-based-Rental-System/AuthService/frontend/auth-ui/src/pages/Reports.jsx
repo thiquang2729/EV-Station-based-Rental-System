@@ -76,7 +76,21 @@ const Reports = () => {
   }, [user, navigate]);
 
   const loadComplaints = async () => {
-    if (!user || !accessToken) return;
+    if (!user || !accessToken) {
+      console.warn('loadComplaints - Missing user or token:', {
+        hasUser: !!user,
+        hasToken: !!accessToken,
+        userId: user?.id
+      });
+      return;
+    }
+    
+    console.log('loadComplaints - Starting:', {
+      userId: user.id,
+      userRole: user.role,
+      hasToken: !!accessToken,
+      tokenLength: accessToken?.length
+    });
     
     try {
       setLoadingComplaints(true);
@@ -84,9 +98,17 @@ const Reports = () => {
         renterId: user.id,
         accessToken,
       });
+      console.log('loadComplaints - Success:', response);
       setComplaints(response.data || []);
     } catch (error) {
       console.error("Load complaints error:", error);
+      toast({
+        status: "error",
+        title: "Lỗi",
+        description: error.response?.data?.message || error.message || "Không thể tải danh sách khiếu nại",
+        duration: 4000,
+        isClosable: true,
+      });
     } finally {
       setLoadingComplaints(false);
     }

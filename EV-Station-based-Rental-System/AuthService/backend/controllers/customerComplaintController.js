@@ -135,12 +135,32 @@ const customerComplaintController = {
       const requestingUserId = req.user.id;
       const requestingUserRole = req.user.role;
 
+      console.log('getComplaintsByRenterId - Debug:', {
+        renterId,
+        renterIdType: typeof renterId,
+        requestingUserId,
+        requestingUserIdType: typeof requestingUserId,
+        requestingUserRole,
+        userMatch: requestingUserId === renterId,
+        userMatchStrict: requestingUserId === renterId,
+        userMatchString: String(requestingUserId) === String(renterId),
+        isStaffOrAdmin: requestingUserRole === "ADMIN" || requestingUserRole === "STAFF",
+        reqUser: req.user
+      });
+
       // User chỉ có thể xem complaints của chính họ, trừ khi là STAFF/ADMIN
+      // So sánh string để đảm bảo khớp nhau
+      const userIdMatch = String(requestingUserId) === String(renterId);
       if (
-        requestingUserId !== renterId &&
+        !userIdMatch &&
         requestingUserRole !== "ADMIN" &&
         requestingUserRole !== "STAFF"
       ) {
+        console.log('Access denied - User ID mismatch:', {
+          requestingUserId,
+          renterId,
+          role: requestingUserRole
+        });
         return sendError(res, {
           status: 403,
           message: "Bạn không có quyền xem khiếu nại của người khác.",

@@ -121,6 +121,7 @@ const authController = {
       sub: user.id,
       id: user.id,
       role: user.role,
+      fullName: user.fullName || user.name || null,
     };
 
     if (JWT_AUDIENCE) {
@@ -136,6 +137,7 @@ const authController = {
       sub: user.id,
       id: user.id,
       role: user.role,
+      fullName: user.fullName || user.name || null,
     };
 
     if (JWT_AUDIENCE) {

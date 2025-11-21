@@ -1,110 +1,61 @@
-// import React, { useEffect, useState } from "react";
-// import { Link, useLocation } from "react-router-dom";
-// import assets from "../assets/data";
-// import Navbar from "./Navbar";
-
-// const Header = () => {
-//     const [menuOpened, setMenuOpened] = useState(false);
-//     const [active, setActive] = useState(false);
-//     const [showSearch, setShowSearch] = useState(false);
-//     const location = useLocation();
-
-//     const isHomePage = location.pathname.endsWith("/");
-
-//     useEffect(() => {
-//         const handleScroll = () => {
-//             if (window.scrollY > 40) setActive(true);
-//             else setActive(false);
-//         };
-//         window.addEventListener("scroll", handleScroll);
-//         return () => window.removeEventListener("scroll", handleScroll);
-//     }, []);
-
-//     return (
-//         <header
-//             className={`${active ? "bg-white shadow-sm py-2" : "py-3"} ${!isHomePage && "bg-white"
-//                 } fixed top-0 w-full left-0 right-0 z-50 transition-all duration-200`}
-//         >
-//             <div className="max-padd-container">
-//                 {/* CONTAINER */}
-//                 <div className="flexBetween">
-//                     {/* Logo */}
-//                     <div className="flex flex-1">
-//                         <Link to={"/"}>
-//                             <img src={assets.logoImg} alt="logoImg" width={88} className="h-7" />
-//                             <span className="text-textColor uppercase text-xs font-extrabold tracking-[6px] relative bottom-1">
-//                                 Rentroo
-//                             </span>
-//                         </Link>
-//                     </div>
-
-//                     {/* Navbar */}
-//                     <Navbar
-//                         setMenuOpened={setMenuOpened}
-//                         containerStyles={`${menuOpened ? "flex" : "hidden"} lg:flex items-center gap-x-8`}
-//                     />
-
-//                     {/* Buttons & Searchbar & Profile */}
-//                     <div className="flex sm:flex-1 items-center sm:justify-end gap-x-4 sm:gap-x-8">
-//                         {/* Searchbar */}
-//                         <div className="relative hidden xl:flex items-center">
-//                             <div
-//                                 className={`transition-all duration-300 ease-in-out ring-1 ring-slate-900/10 bg-white rounded-full overflow-hidden ${showSearch ? "w-[266px] opacity-100 px-4 py-2" : "w-11 opacity-0 px-0 py-0"
-//                                     }`}
-//                             >
-//                                 <input
-//                                     type="text"
-//                                     placeholder="Type here..."
-//                                     className="w-full text-sm outline-none pr-10 placeholder:text-gray-400"
-//                                 />
-//                             </div>
-
-//                             {/* Toggle Button */}
-//                             <div
-//                                 onClick={() => setShowSearch((prev) => !prev)}
-//                                 className="absolute right-0 ring-1 ring-slate-900/10 bg-white p-[8px] rounded-full cursor-pointer z-10"
-//                             >
-//                                 <img src={assets.search} alt="" />
-//                             </div>
-//                         </div>
-
-//                         {/* Menu Toggle */}
-//                         {menuOpened ? (
-//                             <img
-//                                 src={assets.close}
-//                                 alt="close"
-//                                 onClick={() => setMenuOpened(false)}
-//                                 className="lg:hidden cursor-pointer text-xl"
-//                             />
-//                         ) : (
-//                             <img
-//                                 src={assets.menu}
-//                                 alt="menu"
-//                                 onClick={() => setMenuOpened(true)}
-//                                 className="lg:hidden cursor-pointer text-xl"
-//                             />
-//                         )}
-//                     </div>
-//                 </div>
-//             </div>
-//         </header>
-//     );
-// };
-
-// export default Header;
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {
   const [elevated, setElevated] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
   const location = useLocation();
   const isHome = location.pathname === '/';
+  const { currentUser, logout, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setElevated(window.scrollY > 20);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogin = () => {
+    // Redirect to auth service login page
+    window.location.href = 'http://localhost:3002/login';
+  };
+
+  const getRoleBadgeColor = (role) => {
+    switch (role) {
+      case 'ADMIN':
+        return 'bg-red-100 text-red-800';
+      case 'STAFF':
+        return 'bg-blue-100 text-blue-800';
+      case 'RENTER':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getRoleDisplayName = (role) => {
+    switch (role) {
+      case 'ADMIN':
+        return 'Quản trị viên';
+      case 'STAFF':
+        return 'Nhân viên';
+      case 'RENTER':
+        return 'Khách hàng';
+      default:
+        return role;
+    }
+  };
 
   return (
     <header className={`${(elevated || !isHome) ? 'bg-white/90 backdrop-blur border-b border-gray-200/60' : 'bg-transparent'} sticky top-0 z-40`}>
@@ -120,8 +71,61 @@ const Header = () => {
           <NavLink to="/contact" className={({ isActive }) => isActive ? 'active-link px-2 py-1' : 'px-2 py-1'}>Contact</NavLink>
         </nav>
         <div className="flex items-center gap-3">
-          <button className="btn-outline hidden sm:inline-flex">Sign in</button>
-          <button className="btn-soild">Get started</button>
+          {isAuthenticated && currentUser ? (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                    {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div className="hidden sm:flex flex-col items-start">
+                    <span className="text-sm font-semibold text-gray-900">
+                      {currentUser.fullName || 'User'}
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(currentUser.role)}`}>
+                      {getRoleDisplayName(currentUser.role)}
+                    </span>
+                  </div>
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </button>
+              
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <p className="text-sm font-semibold text-gray-900">{currentUser.fullName || 'User'}</p>
+                    <p className="text-xs text-gray-500 mt-1">ID: {currentUser.id}</p>
+                    <span className={`inline-block text-xs px-2 py-1 rounded-full mt-2 ${getRoleBadgeColor(currentUser.role)}`}>
+                      {getRoleDisplayName(currentUser.role)}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      logout();
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    Đăng xuất
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <button onClick={handleLogin} className="btn-outline hidden sm:inline-flex">
+                Đăng nhập
+              </button>
+              <button onClick={handleLogin} className="btn-soild">
+                Bắt đầu
+              </button>
+            </>
+          )}
         </div>
       </div>
       {/* Vehicle quick list bar removed as requested */}

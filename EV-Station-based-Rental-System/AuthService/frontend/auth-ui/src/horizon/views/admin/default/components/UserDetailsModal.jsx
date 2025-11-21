@@ -54,11 +54,13 @@ export default function UserDetailsModal({
                   </Box>
                   <Box>
                     <Text fontSize="sm" color={textColorSecondary} mb="5px">Email</Text>
-                    <Text fontWeight="600" color={textColor}>{userDetails.email}</Text>
+                    <Text fontWeight="600" color={textColor}>{userDetails.email || "N/A"}</Text>
                   </Box>
                   <Box>
                     <Text fontSize="sm" color={textColorSecondary} mb="5px">Số điện thoại</Text>
-                    <Text fontWeight="600" color={textColor}>{userDetails.phoneNumber || "N/A"}</Text>
+                    <Text fontWeight="600" color={textColor}>
+                      {userDetails.phoneNumber || userDetails.phone_number || userDetails.phone || "N/A"}
+                    </Text>
                   </Box>
                   <Box>
                     <Text fontSize="sm" color={textColorSecondary} mb="5px">Vai trò</Text>

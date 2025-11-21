@@ -9,6 +9,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-xdhdt}
+    ports:
+      - "3309:3306"
     # No host port mapping to avoid conflicts; containers connect via network
     volumes:
       - mysql_data:/var/lib/mysql
@@ -19,6 +21,7 @@ services:
       retries: 10
     networks:
       - app-network
+      - ev-rental-network
     restart: unless-stopped
 
   # Auth Backend Service
@@ -31,8 +34,11 @@ services:
       PORT: 8000
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-xdhdt}
       # DB creds and database come from env_file to match MySQL
-      CLIENT_URL: http://localhost:3000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080,https://localhost,https://yourdomain.com,http://localhost:8060,http://127.0.0.1:8060
+      CLIENT_URL: http://localhost:3000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080,https://localhost,https://yourdomain.com,http://localhost:8060,http://127.0.0.1:8060,http://localhost:9080,http://127.0.0.1:9080
     depends_on:
       mysql:
         condition: service_healthy
@@ -45,6 +51,7 @@ services:
       retries: 5
     networks:
       - app-network
+      - ev-rental-network
     restart: unless-stopped
 
   # Frontend Build
@@ -60,6 +67,7 @@ services:
       - auth-backend
     networks:
       - app-network
+      - ev-rental-network
 
 volumes:
   mysql_data:
@@ -68,7 +76,6 @@ volumes:
 networks:
   app-network:
     driver: bridge
-  ev-rental-network:
-    # ← Thêm shared network
+  ev-rental-network: # ← Thêm shared network
     external: true
     name: ev-rental-network

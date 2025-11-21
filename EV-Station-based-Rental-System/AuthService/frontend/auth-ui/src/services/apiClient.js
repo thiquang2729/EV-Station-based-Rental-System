@@ -16,6 +16,11 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     console.log('API Request:', config.method?.toUpperCase(), config.baseURL + config.url);
+    console.log('Request Headers:', {
+      Authorization: config.headers?.Authorization ? config.headers.Authorization.substring(0, 30) + '...' : 'NOT SET',
+      'Content-Type': config.headers?.['Content-Type'],
+      allHeaders: config.headers
+    });
     return config;
   },
   (error) => {

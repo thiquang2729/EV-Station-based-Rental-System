@@ -25,12 +25,19 @@ const verifyToken = (req, res, next) => {
 
   return jwt.verify(token, process.env.JWT_ACCESS_KEY, (err, user) => {
     if (err) {
+      console.error('Token verification error:', err);
       return sendError(res, {
         status: 403,
         message: "Access token is invalid or expired.",
         code: "INVALID_TOKEN",
       });
     }
+    console.log('Token verified - User from token:', {
+      id: user.id,
+      role: user.role,
+      email: user.email,
+      fullUserObject: user
+    });
     req.user = user;
     return next();
   });
