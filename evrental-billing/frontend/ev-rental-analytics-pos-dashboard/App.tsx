@@ -71,21 +71,21 @@ const AppContent: React.FC = () => {
     // Role-based page access control
     switch (currentPage) {
       case 'DASHBOARD':
-        return currentUser?.role === UserRole.ADMIN ? <Dashboard /> : <h2>Access Denied</h2>;
+        return currentUser?.role === UserRole.ADMIN ? <Dashboard /> : <h2>Truy cập bị từ chối</h2>;
       case 'POS':
-        return currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.STAFF ? <POS /> : <h2>Access Denied</h2>;
+        return currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.STAFF ? <POS /> : <h2>Truy cập bị từ chối</h2>;
       case 'BOOKING':
         if (hasBookingParams) {
           return <Booking setCurrentPage={setCurrentPage} />;
         }
         return currentUser && currentUser.role === UserRole.RENTER
           ? <Booking setCurrentPage={setCurrentPage} />
-          : <h2>Access Denied</h2>;
+          : <h2>Truy cập bị từ chối</h2>;
        case 'PAYMENT_SUCCESS':
         if (hasPaymentSuccess) {
           return <PaymentSuccess setCurrentPage={setCurrentPage} />;
         }
-        return currentUser && currentUser.role === UserRole.RENTER ? <PaymentSuccess setCurrentPage={setCurrentPage} /> : <h2>Access Denied</h2>;
+        return currentUser && currentUser.role === UserRole.RENTER ? <PaymentSuccess setCurrentPage={setCurrentPage} /> : <h2>Truy cập bị từ chối</h2>;
       default:
         return <Dashboard />;
     }

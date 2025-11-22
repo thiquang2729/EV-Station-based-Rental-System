@@ -50,12 +50,12 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage }) => {
         return (
           <>
             <NavItem
-              label="Analytics Dashboard"
+              label="Bảng Điều Khiển Phân Tích"
               isActive={currentPage === 'DASHBOARD'}
               onClick={() => setCurrentPage('DASHBOARD')}
             />
             <NavItem
-              label="Station POS"
+              label="POS Trạm"
               isActive={currentPage === 'POS'}
               onClick={() => setCurrentPage('POS')}
             />
@@ -64,7 +64,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage }) => {
       case UserRole.STAFF:
         return (
           <NavItem
-            label="Station POS"
+            label="POS Trạm"
             isActive={currentPage === 'POS'}
             onClick={() => setCurrentPage('POS')}
           />
@@ -72,7 +72,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage }) => {
       case UserRole.RENTER:
          return (
           <NavItem
-            label="Online Booking"
+            label="Đặt Xe Trực Tuyến"
             isActive={currentPage === 'BOOKING'}
             onClick={() => setCurrentPage('BOOKING')}
           />
@@ -98,6 +98,16 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage }) => {
                 {renderNavItems()}
             </nav>
 
+            {/* Nút Trở về Admin - chỉ hiện với ADMIN và STAFF */}
+            {currentUser && (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.STAFF) && (
+              <button
+                onClick={() => window.location.href = 'http://localhost:8060/admin/default'}
+                className="px-4 py-2 text-sm font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              >
+                Trở về Admin
+              </button>
+            )}
+
             {currentUser && (
               <div className="relative" ref={dropdownRef}>
                 <button onClick={() => setDropdownOpen(!isDropdownOpen)} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors">
@@ -121,7 +131,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage }) => {
                       }}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Logout
+                      Đăng xuất
                     </button>
                   </div>
                 )}

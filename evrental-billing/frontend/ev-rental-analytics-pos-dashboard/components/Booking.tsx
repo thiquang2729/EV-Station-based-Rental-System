@@ -100,7 +100,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ setCurrentPage }) => {
         paymentId: result.data?.paymentId || null
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+      const errorMessage = err instanceof Error ? err.message : 'Đã xảy ra lỗi không xác định.';
       setPaymentState({ status: 'failed', error: errorMessage, vnpayUrl: null, paymentId: null });
     }
   };

@@ -43,14 +43,31 @@ const RevenueChart: React.FC = () => {
         to.toISOString().split('T')[0]
       );
 
-      // Map to chart points
-      const points = daily.map(d => ({ name: formatDate(d.date), revenue: d.total })) as RevenueDataPoint[];
+      console.log('[RevenueChart] Loaded daily data:', daily);
+
+      // Fill missing dates with 0 revenue
+      const allDates: string[] = [];
+      const currentDate = new Date(from);
+      while (currentDate <= to) {
+        allDates.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      // Create a map of existing data
+      const dataMap = new Map(daily.map(d => [d.date, d.total]));
+
+      // Map to chart points, filling missing dates with 0
+      const points = allDates.map(date => ({
+        name: formatDate(date),
+        revenue: dataMap.get(date) || 0
+      })) as RevenueDataPoint[];
+
       setData(points);
       setFromDate(from.toISOString().split('T')[0]);
       setToDate(to.toISOString().split('T')[0]);
     } catch (error) {
       console.error('Failed to load revenue data:', error);
-      setError('Failed to load revenue data');
+      setError('Không tải được dữ liệu doanh thu');
       
       // Fallback to mock data
       setData([
@@ -72,7 +89,27 @@ const RevenueChart: React.FC = () => {
       setIsLoading(true);
       setError(null);
       const daily = await getRevenueDaily(fromDate, toDate);
-      const points = daily.map(d => ({ name: formatDate(d.date), revenue: d.total })) as RevenueDataPoint[];
+      console.log('[RevenueChart] Loaded range data:', daily);
+
+      // Fill missing dates with 0 revenue
+      const allDates: string[] = [];
+      const from = new Date(fromDate);
+      const to = new Date(toDate);
+      const currentDate = new Date(from);
+      while (currentDate <= to) {
+        allDates.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      // Create a map of existing data
+      const dataMap = new Map(daily.map(d => [d.date, d.total]));
+
+      // Map to chart points, filling missing dates with 0
+      const points = allDates.map(date => ({
+        name: formatDate(date),
+        revenue: dataMap.get(date) || 0
+      })) as RevenueDataPoint[];
+
       setData(points);
     } catch (e) {
       console.error('Failed to load range:', e);
@@ -87,10 +124,14 @@ const RevenueChart: React.FC = () => {
       setError(null);
       setSelectedTotal(null);
       const rows = await getRevenueDaily(dateStr, dateStr);
-      const total = Array.isArray(rows) && rows.length ? Number(rows[0].total || 0) : 0;
+      console.log('[RevenueChart] Loaded data for date:', dateStr, 'Rows:', rows);
+      // Tìm row có date khớp với dateStr
+      const row = Array.isArray(rows) ? rows.find(r => r.date === dateStr) : null;
+      const total = row ? Number(row.total || 0) : 0;
       setSelectedTotal(total);
     } catch (e) {
       console.error('Failed to load revenue daily:', e);
+      setError('Không tải được dữ liệu doanh thu');
       // Graceful fallback: show 0 thay vì lỗi
       setSelectedTotal(0);
     }
@@ -101,7 +142,7 @@ const RevenueChart: React.FC = () => {
       <div className="flex items-center justify-center h-80">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-500">Loading revenue data...</p>
+          <p className="mt-2 text-gray-500">Đang tải dữ liệu doanh thu...</p>
         </div>
       </div>
     );
@@ -172,9 +213,9 @@ const RevenueChart: React.FC = () => {
                 tickFormatter={(value: number) => `${(value / 1000000)}M`}
                 label={{ value: 'VND', angle: -90, position: 'insideLeft' }}
             />
-            <Tooltip formatter={(value: number) => [`${value.toLocaleString('vi-VN')} VND`, 'Revenue']} />
+            <Tooltip formatter={(value: number) => [`${value.toLocaleString('vi-VN')} VND`, 'Doanh thu']} />
             <Legend />
-            <Bar dataKey="revenue" fill="#3b82f6" />
+            <Bar dataKey="revenue" fill="#3b82f6" name="Doanh thu" />
         </BarChart>
         </ResponsiveContainer>
       </div>

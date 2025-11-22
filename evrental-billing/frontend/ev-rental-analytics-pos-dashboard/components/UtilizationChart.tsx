@@ -30,7 +30,7 @@ const UtilizationChart: React.FC = () => {
       setData(hourlyData);
     } catch (error) {
       console.error('Failed to load utilization data:', error);
-      setError('Failed to load utilization data');
+      setError('Không tải được dữ liệu mức độ sử dụng');
       
       // Fallback to mock data (all hours with 0 bookings)
       setData(Array.from({ length: 24 }, (_, i) => ({ hour: i, bookingCount: 0 })));
@@ -44,7 +44,7 @@ const UtilizationChart: React.FC = () => {
       <div className="flex items-center justify-center h-80">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-500">Loading utilization data...</p>
+          <p className="mt-2 text-gray-500">Đang tải dữ liệu mức độ sử dụng...</p>
         </div>
       </div>
     );
@@ -59,7 +59,7 @@ const UtilizationChart: React.FC = () => {
             onClick={loadUtilizationData}
             className="text-blue-600 hover:text-blue-800 underline"
           >
-            Try again
+            Thử lại
           </button>
         </div>
       </div>

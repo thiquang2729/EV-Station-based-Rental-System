@@ -9,6 +9,9 @@ import {
   MdEdit,
   MdDescription,
   MdWarning,
+  MdShoppingCart,
+  MdPointOfSale,
+  MdAnalytics,
 } from 'react-icons/md';
 
 // Admin Imports
@@ -19,6 +22,9 @@ import ComplaintManagement from 'views/admin/complaints';
 import Profile from 'views/admin/profile';
 import DataTables from 'views/admin/dataTables';
 import RiskyUsersPage from 'views/admin/riskyUsers';
+import BookingService from 'views/admin/booking';
+import POSService from 'views/admin/pos';
+import AnalyticsService from 'views/admin/analytics';
 import { MdReportProblem } from 'react-icons/md';
 import RTL from 'views/admin/rtl';
 
@@ -90,6 +96,27 @@ const routes = [
     icon: <Icon as={MdWarning} width="20px" height="20px" color="inherit" />,
     path: '/risky-users',
     component: <RiskyUsersPage />,
+  },
+  {
+    name: 'Quản lý đặt xe',
+    layout: '/admin',
+    icon: <Icon as={MdShoppingCart} width="20px" height="20px" color="inherit" />,
+    path: '/booking',
+    component: <BookingService />,
+  },
+  {
+    name: 'POS Trạm',
+    layout: '/admin',
+    icon: <Icon as={MdPointOfSale} width="20px" height="20px" color="inherit" />,
+    path: '/pos',
+    component: <POSService />,
+  },
+  {
+    name: 'Phân tích dữ liệu',
+    layout: '/admin',
+    icon: <Icon as={MdAnalytics} width="20px" height="20px" color="inherit" />,
+    path: '/analytics',
+    component: <AnalyticsService />,
   },
   // {
   //   name: 'Profile',

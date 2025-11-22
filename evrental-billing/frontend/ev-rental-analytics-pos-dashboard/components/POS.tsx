@@ -31,9 +31,9 @@ const fetchTransactions = async (): Promise<Payment[]> => {
 
   if (!response.ok) {
     if (response.status === 401) {
-      throw new Error('Authentication required. Please login again.');
+      throw new Error('Yêu cầu xác thực. Vui lòng đăng nhập lại.');
     }
-    throw new Error('Failed to fetch transactions');
+    throw new Error('Không tải được giao dịch');
   }
 
   const data = await response.json();
@@ -75,10 +75,10 @@ const createPayment = async (paymentData: {
 
   if (!response.ok) {
     if (response.status === 401) {
-      throw new Error('Authentication required. Please login again.');
+      throw new Error('Yêu cầu xác thực. Vui lòng đăng nhập lại.');
     }
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to create payment');
+    throw new Error(errorData.message || 'Không tạo được thanh toán');
   }
 
   const data = await response.json();
@@ -108,10 +108,10 @@ const confirmPayment = async (paymentId: string): Promise<Payment> => {
 
   if (!response.ok) {
     if (response.status === 401) {
-      throw new Error('Authentication required. Please login again.');
+      throw new Error('Yêu cầu xác thực. Vui lòng đăng nhập lại.');
     }
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to confirm payment');
+    throw new Error(errorData.message || 'Không xác nhận được thanh toán');
   }
 
   const data = await response.json();
@@ -127,7 +127,7 @@ const extractStationName = (description: string, stationId: string): string => {
     return match[1].trim();
   }
   // Nếu không tìm thấy trong description, trả về stationId
-  return stationId || 'Unknown';
+  return stationId || 'Không xác định';
 };
 
 const POS: React.FC = () => {
@@ -185,7 +185,7 @@ const POS: React.FC = () => {
 
   const loadTransactions = async () => {
     if (!currentUser) {
-      setError('Please login to view transactions');
+      setError('Vui lòng đăng nhập để xem giao dịch');
       return;
     }
 
@@ -211,11 +211,11 @@ const POS: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) {
-      setError('Please login to create payment');
+      setError('Vui lòng đăng nhập để tạo thanh toán');
       return;
     }
     if (!bookingId || !renterId || !amount) {
-        setError('Booking ID, Renter ID, and Amount are required.');
+        setError('Mã đặt xe, Mã người thuê và Số tiền là bắt buộc.');
         return;
     }
     setError('');
@@ -253,7 +253,7 @@ const POS: React.FC = () => {
 
   const handleConfirmPayment = async (paymentId: string) => {
     if (!currentUser) {
-      setError('Please login to confirm payment');
+      setError('Vui lòng đăng nhập để xác nhận thanh toán');
       return;
     }
     setConfirmingPaymentId(paymentId);
@@ -283,27 +283,38 @@ const POS: React.FC = () => {
     [PaymentStatus.CANCELED]: 'bg-gray-100 text-gray-800',
   };
 
+  const getStatusLabel = (status: PaymentStatus): string => {
+    const statusMap: Record<PaymentStatus, string> = {
+      [PaymentStatus.SUCCEEDED]: 'Thành công',
+      [PaymentStatus.PENDING]: 'Đang chờ',
+      [PaymentStatus.FAILED]: 'Thất bại',
+      [PaymentStatus.REFUNDED]: 'Đã hoàn tiền',
+      [PaymentStatus.CANCELED]: 'Đã hủy',
+    };
+    return statusMap[status] || status;
+  };
+
 
   return (
     <div className="space-y-6">
        <header>
-        <h2 className="text-3xl font-bold leading-tight text-gray-900">Station Point of Sale (POS)</h2>
-        <p className="mt-1 text-sm text-gray-500">Collect payments and manage transactions from all stations.</p>
+        <h2 className="text-3xl font-bold leading-tight text-gray-900">Điểm Bán Hàng Trạm (POS)</h2>
+        <p className="mt-1 text-sm text-gray-500">Thu tiền và quản lý giao dịch từ tất cả các trạm.</p>
       </header>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-1">
-                 <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">New Transaction</h3>
+                 <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Giao Dịch Mới</h3>
                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <Input label="Booking ID" id="bookingId" value={bookingId} onChange={(e) => setBookingId(e.target.value)} placeholder="e.g., bk_abc123" required />
-                    <Input label="Renter ID" id="renterId" value={renterId} onChange={(e) => setRenterId(e.target.value)} placeholder="e.g., rent_xyz456" required />
-                    <Input label="Amount (VND)" id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g., 150000" required />
-                    <Select label="Payment Method" id="method" value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
+                    <Input label="Mã Đặt Xe" id="bookingId" value={bookingId} onChange={(e) => setBookingId(e.target.value)} placeholder="vd: bk_abc123" required />
+                    <Input label="Mã Người Thuê" id="renterId" value={renterId} onChange={(e) => setRenterId(e.target.value)} placeholder="vd: rent_xyz456" required />
+                    <Input label="Số Tiền (VND)" id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="vd: 150000" required />
+                    <Select label="Phương Thức Thanh Toán" id="method" value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
                         {Object.values(PaymentMethod).map(m => <option key={m} value={m}>{m}</option>)}
                     </Select>
-                    <Input label="Description (Optional)" id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g., Rental Fee" />
+                    <Input label="Mô Tả (Tùy Chọn)" id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="vd: Phí thuê xe" />
                     {error && <p className="text-sm text-red-600">{error}</p>}
                     <Button type="submit" className="w-full" disabled={isSubmitting}>
-                        {isSubmitting ? 'Processing...' : 'Collect Payment'}
+                        {isSubmitting ? 'Đang xử lý...' : 'Thu Tiền'}
                     </Button>
                  </form>
             </Card>
@@ -311,40 +322,40 @@ const POS: React.FC = () => {
             <div className="lg:col-span-2">
                 <Card>
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-gray-800">Today's Transactions</h3>
+                        <h3 className="text-lg font-semibold text-gray-800">Giao Dịch Hôm Nay</h3>
                         <Button 
                             onClick={loadTransactions} 
                             disabled={isLoading}
                             className="text-sm"
                         >
-                            {isLoading ? 'Loading...' : 'Refresh'}
+                            {isLoading ? 'Đang tải...' : 'Làm mới'}
                         </Button>
                     </div>
                     
                     {isLoading ? (
                         <div className="text-center py-8">
                             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                            <p className="mt-2 text-gray-500">Loading transactions...</p>
+                            <p className="mt-2 text-gray-500">Đang tải giao dịch...</p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã Đặt Xe</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạm</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số Tiền</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phương Thức</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng Thái</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời Gian</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao Tác</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {transactions.length === 0 ? (
                                         <tr>
                                             <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                                                No transactions found
+                                                Không tìm thấy giao dịch
                                             </td>
                                         </tr>
                                     ) : (
@@ -354,16 +365,16 @@ const POS: React.FC = () => {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-semibold">
                                               {extractStationName(tx.description || '', tx.stationId) !== tx.stationId 
                                                 ? extractStationName(tx.description || '', tx.stationId)
-                                                : (stationsMap[tx.stationId] || tx.stationId || 'Unknown')}
+                                                : (stationsMap[tx.stationId] || tx.stationId || 'Không xác định')}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{tx.amount.toLocaleString('vi-VN')} VND</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{tx.method}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColorMap[tx.status]}`}>
-                                                    {tx.status}
+                                                    {getStatusLabel(tx.status)}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(tx.createdAt).toLocaleTimeString()}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(tx.createdAt).toLocaleTimeString('vi-VN')}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                 {tx.status === PaymentStatus.PENDING ? (
                                                     <Button
@@ -371,7 +382,7 @@ const POS: React.FC = () => {
                                                         disabled={confirmingPaymentId === tx.id}
                                                         className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
                                                     >
-                                                        {confirmingPaymentId === tx.id ? 'Confirming...' : 'Confirm'}
+                                                        {confirmingPaymentId === tx.id ? 'Đang xác nhận...' : 'Xác nhận'}
                                                     </Button>
                                                 ) : (
                                                     <span className="text-gray-400 text-xs">-</span>

@@ -32,7 +32,7 @@ const StationReport: React.FC = () => {
       setReportData(hourlyData);
     } catch (error) {
       console.error('Failed to load station reports:', error);
-      setError('Failed to load station reports');
+      setError('Không tải được báo cáo trạm');
       
       // Fallback to mock data
       const mockData: RentalHourDataPoint[] = [];
@@ -62,7 +62,7 @@ const StationReport: React.FC = () => {
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-500">Loading rental hours data...</p>
+          <p className="mt-2 text-gray-500">Đang tải dữ liệu giờ thuê...</p>
         </div>
       </div>
     );
@@ -116,14 +116,14 @@ const StationReport: React.FC = () => {
             <Tooltip 
               formatter={(value: number, name: string) => {
                 if (name === 'rentalHours') return [`${value.toFixed(1)} giờ`, 'Tổng giờ thuê'];
-                if (name === 'bookingCount') return [`${value} bookings`, 'Số lượng'];
+                if (name === 'bookingCount') return [`${value} đặt xe`, 'Số lượng'];
                 return [value, name];
               }}
               labelFormatter={(hour: number) => `Giờ ${hour}:00`}
             />
             <Legend />
             <Bar dataKey="rentalHours" fill="#3b82f6" name="Tổng giờ thuê" />
-            <Bar dataKey="bookingCount" fill="#10b981" name="Số lượng booking" />
+            <Bar dataKey="bookingCount" fill="#10b981" name="Số lượng đặt xe" />
           </BarChart>
         </ResponsiveContainer>
       </div>

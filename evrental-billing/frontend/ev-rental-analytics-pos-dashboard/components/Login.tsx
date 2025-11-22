@@ -28,7 +28,7 @@ const Login: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
         </div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">Welcome to EV-Rental</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">Chào mừng đến EV-Rental</h2>
         <p className="text-gray-500 mb-6 text-center">Đang chuyển đến trang đăng nhập...</p>
         
         <div className="flex items-center justify-center mb-4">

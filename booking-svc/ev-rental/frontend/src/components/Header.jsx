@@ -79,6 +79,14 @@ const Header = () => {
           {currentUser && hasAdminAccess(currentUser) && (
             <NavLink to="/admin" className={({ isActive }) => isActive ? 'active-link px-2 py-1' : 'px-2 py-1'}>Quản trị</NavLink>
           )}
+          {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'STAFF') && (
+            <button
+              onClick={() => window.location.href = 'http://localhost:8060/admin/default'}
+              className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              Trở về Admin
+            </button>
+          )}
         </nav>
         <div className="flex items-center gap-3">
           {isAuthenticated && currentUser ? (

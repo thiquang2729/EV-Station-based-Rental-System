@@ -4,12 +4,16 @@ export async function getRevenueDaily(from, to){
   try {
     const prisma = await getWhitehousePrisma();
     
+    // Parse dates and set proper time boundaries (use UTC to avoid timezone issues)
+    const fromDate = new Date(from + 'T00:00:00.000Z'); // Start of day in UTC
+    const toDate = new Date(to + 'T23:59:59.999Z'); // End of day in UTC
+    
     // Query từ whitehouse fact_booking (thay vì fact_payment)
     const bookings = await prisma.factBooking.findMany({
       where: {
         start_time: {
-          gte: new Date(from),
-          lte: new Date(to),
+          gte: fromDate,
+          lte: toDate,
         },
       },
       select: {

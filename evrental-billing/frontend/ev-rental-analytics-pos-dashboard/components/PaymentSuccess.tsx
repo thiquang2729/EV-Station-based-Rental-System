@@ -84,21 +84,21 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ setCurrentPage }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
-        <p className="text-gray-600 mb-6">Your booking has been confirmed. You will receive an email with the details shortly.</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Thanh Toán Thành Công!</h2>
+        <p className="text-gray-600 mb-6">Đơn đặt xe của bạn đã được xác nhận. Bạn sẽ nhận được email với chi tiết trong thời gian ngắn.</p>
         
         <div className="text-left border-t border-b my-6 py-6 space-y-4">
-            <h3 className="text-xl font-semibold text-gray-800">Booking Summary</h3>
+            <h3 className="text-xl font-semibold text-gray-800">Tóm Tắt Đặt Xe</h3>
             <div>
               <img src={booking.carImageUrl} alt={booking.carModel} className="w-full h-48 object-cover rounded-lg shadow-md mb-3" />
               <h4 className="text-lg font-bold">{booking.carModel}</h4>
             </div>
              <div className="text-sm space-y-2">
-                <p><span className="font-semibold">Booking ID:</span> {booking.id}</p>
-                {paymentId && <p><span className="font-semibold">Payment ID:</span> {paymentId}</p>}
-                <p><span className="font-semibold">Pickup:</span> {booking.pickupStation} at {formatDate(booking.pickupTime)}</p>
-                <p><span className="font-semibold">Drop-off:</span> {booking.dropoffStation} at {formatDate(booking.dropoffTime)}</p>
-                <p className="font-bold pt-2 border-t mt-2"><span className="font-semibold">Total Paid:</span> {booking.priceDetails.total.toLocaleString('vi-VN')} VND</p>
+                <p><span className="font-semibold">Mã Đặt Xe:</span> {booking.id}</p>
+                {paymentId && <p><span className="font-semibold">Mã Thanh Toán:</span> {paymentId}</p>}
+                <p><span className="font-semibold">Nhận Xe:</span> {booking.pickupStation} lúc {formatDate(booking.pickupTime)}</p>
+                <p><span className="font-semibold">Trả Xe:</span> {booking.dropoffStation} lúc {formatDate(booking.dropoffTime)}</p>
+                <p className="font-bold pt-2 border-t mt-2"><span className="font-semibold">Tổng Đã Thanh Toán:</span> {booking.priceDetails.total.toLocaleString('vi-VN')} VND</p>
              </div>
         </div>
         
