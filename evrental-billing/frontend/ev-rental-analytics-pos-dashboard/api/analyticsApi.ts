@@ -3,14 +3,34 @@ import { RevenueDataPoint, UtilizationDataPoint, StationReport } from '../types'
 const API_BASE_URL = 'http://localhost:9080'; // Gateway URL
 
 /**
- * Gets the authorization header with JWT token
+ * Gets the fetch options for cookie-based authentication (SSO)
  */
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('accessToken');
-  return {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` })
+const getFetchOptions = (method: string = 'GET', body?: any) => {
+  const options: RequestInit = {
+    method,
+    credentials: 'include', // Quan trọng: gửi cookie để SSO hoạt động
+    headers: {
+      'Content-Type': 'application/json',
+    },
   };
+  
+  if (body !== undefined) {
+    options.body = JSON.stringify(body);
+  }
+  
+  return options;
+};
+
+/**
+ * Wrapper function để log tất cả API calls
+ */
+const logApiCall = (url: string, method: string, body?: any) => {
+  console.log('🔵 [BILLING API CALL]', {
+    method: method.toUpperCase(),
+    url: url,
+    body: body ? JSON.parse(JSON.stringify(body)) : undefined,
+    timestamp: new Date().toISOString()
+  });
 };
 
 /**
@@ -28,10 +48,9 @@ export const getRevenueData = async (
   if (to) params.append('to', to);
   params.append('granularity', granularity);
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/analytics/revenue?${params}`, {
-    method: 'GET',
-    headers: getAuthHeaders()
-  });
+  const url = `${API_BASE_URL}/api/v1/analytics/revenue?${params}`;
+  logApiCall(url, 'GET');
+  const response = await fetch(url, getFetchOptions('GET'));
 
   if (!response.ok) {
     throw new Error('Failed to fetch revenue data');
@@ -52,10 +71,9 @@ export const getRevenueDaily = async (
   params.append('from', from);
   params.append('to', to);
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/analytics/revenue-daily?${params}`, {
-    method: 'GET',
-    headers: getAuthHeaders()
-  });
+  const url = `${API_BASE_URL}/api/v1/analytics/revenue-daily?${params}`;
+  logApiCall(url, 'GET');
+  const response = await fetch(url, getFetchOptions('GET'));
 
   if (!response.ok) {
     throw new Error('Failed to fetch revenue daily');
@@ -78,10 +96,9 @@ export const getUtilizationData = async (
   if (from) params.append('from', from);
   if (to) params.append('to', to);
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/analytics/utilization?${params}`, {
-    method: 'GET',
-    headers: getAuthHeaders()
-  });
+  const url = `${API_BASE_URL}/api/v1/analytics/utilization?${params}`;
+  logApiCall(url, 'GET');
+  const response = await fetch(url, getFetchOptions('GET'));
 
   if (!response.ok) {
     throw new Error('Failed to fetch utilization data');
@@ -102,10 +119,9 @@ export const getStationReports = async (
   if (date) params.append('date', date);
   params.append('format', format);
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/reports/stations?${params}`, {
-    method: 'GET',
-    headers: getAuthHeaders()
-  });
+  const url = `${API_BASE_URL}/api/v1/reports/stations?${params}`;
+  logApiCall(url, 'GET');
+  const response = await fetch(url, getFetchOptions('GET'));
 
   if (!response.ok) {
     throw new Error('Failed to fetch station reports');
@@ -128,10 +144,9 @@ export const getPeakHoursData = async (
   if (from) params.append('from', from);
   if (to) params.append('to', to);
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/analytics/peak-hours?${params}`, {
-    method: 'GET',
-    headers: getAuthHeaders()
-  });
+  const url = `${API_BASE_URL}/api/v1/analytics/peak-hours?${params}`;
+  logApiCall(url, 'GET');
+  const response = await fetch(url, getFetchOptions('GET'));
 
   if (!response.ok) {
     throw new Error('Failed to fetch peak hours data');

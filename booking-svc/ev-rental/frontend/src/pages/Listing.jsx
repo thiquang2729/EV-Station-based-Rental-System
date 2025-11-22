@@ -58,9 +58,9 @@ export const Listing = () => {
   return (
     <div className="max-padd-container py-10">
       <div className="flex items-end justify-between gap-4 mb-6">
-        <h3 className="m-0">All Vehicles</h3>
+        <h3 className="m-0">Tất Cả Xe</h3>
         {!loading && !error && (
-          <div className="text-sm text-gray-500">{filtered.length} results</div>
+          <div className="text-sm text-gray-500">{filtered.length} kết quả</div>
         )}
       </div>
 
@@ -69,30 +69,30 @@ export const Listing = () => {
         <input
           value={q}
           onChange={(e)=>setQ(e.target.value)}
-          placeholder="Search name/plate"
+          placeholder="Tìm tên/biển số"
           className="border p-2 rounded md:col-span-2"
         />
         <select value={type} onChange={(e)=>setType(e.target.value)} className="border p-2 rounded">
-          <option value="">All types</option>
+          <option value="">Tất cả loại</option>
           {types.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
         <select value={stationId} onChange={(e)=>setStationId(e.target.value)} className="border p-2 rounded">
-          <option value="">All stations</option>
+          <option value="">Tất cả trạm</option>
           {stations.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
         <select value={avail} onChange={(e)=>setAvail(e.target.value)} className="border p-2 rounded">
-          <option value="">Any availability</option>
-          <option value="true">Available</option>
-          <option value="false">Unavailable</option>
+          <option value="">Tất cả trạng thái</option>
+          <option value="true">Sẵn sàng</option>
+          <option value="false">Không sẵn sàng</option>
         </select>
         <div className="flex gap-2">
-          <input type="number" min="0" value={priceMin} onChange={(e)=>setPriceMin(e.target.value)} placeholder="Min ₫/h" className="border p-2 rounded w-full" />
-          <input type="number" min="0" value={priceMax} onChange={(e)=>setPriceMax(e.target.value)} placeholder="Max ₫/h" className="border p-2 rounded w-full" />
+          <input type="number" min="0" value={priceMin} onChange={(e)=>setPriceMin(e.target.value)} placeholder="Min ₫/ngày" className="border p-2 rounded w-full" />
+          <input type="number" min="0" value={priceMax} onChange={(e)=>setPriceMax(e.target.value)} placeholder="Max ₫/ngày" className="border p-2 rounded w-full" />
         </div>
-        <button type="button" onClick={()=>{setQ('');setType('');setStationId('');setAvail('');setPriceMin('');setPriceMax('');}} className="btn-outline">Clear</button>
+        <button type="button" onClick={()=>{setQ('');setType('');setStationId('');setAvail('');setPriceMin('');setPriceMax('');}} className="btn-outline">Xóa bộ lọc</button>
       </div>
 
-      {loading && <div>Loading vehicles...</div>}
+      {loading && <div>Đang tải danh sách xe...</div>}
       {error && <div className="text-red-600">{error}</div>}
 
       {!loading && !error && (
@@ -108,7 +108,7 @@ export const Listing = () => {
                   {v.imageUrl ? (
                     <img src={v.imageUrl} alt={v.name || v.id} className="w-full h-full object-contain" />
                   ) : (
-                    <div className="text-gray-300">No image</div>
+                    <div className="text-gray-300">Không có ảnh</div>
                   )}
                 </div>
                 <div className="p-4">
@@ -116,10 +116,10 @@ export const Listing = () => {
                     <div className="text-base font-semibold truncate mr-2">{v.name || v.id}</div>
                     <span
                       className={`inline-block w-2 h-2 rounded-full ${v.isAvailable ? 'bg-emerald-500' : 'bg-gray-300'}`}
-                      title={v.isAvailable ? 'Available' : 'Unavailable'}
+                      title={v.isAvailable ? 'Sẵn sàng' : 'Không sẵn sàng'}
                     />
                   </div>
-                  <div className="text-sm text-gray-500 mb-2 capitalize">{v.type || 'vehicle'}</div>
+                  <div className="text-sm text-gray-500 mb-2 capitalize">{v.type || 'xe'}</div>
                   {v.pricePerDay !== undefined && (
                     <div className="text-xs text-gray-500">{Number(v.pricePerDay||0).toLocaleString('vi-VN')} đ/ngày</div>
                   )}
@@ -131,7 +131,7 @@ export const Listing = () => {
             ))}
           </div>
         ) : (
-          <div className="text-gray-600">No vehicles found.</div>
+          <div className="text-gray-600">Không tìm thấy xe nào.</div>
         )
       )}
     </div>

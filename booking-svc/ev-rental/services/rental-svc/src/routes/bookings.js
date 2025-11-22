@@ -1,6 +1,5 @@
 ﻿const express = require('express');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 const { publishPaymentIntentRequest } = require('../mq');
 const r = express.Router();
 
@@ -21,8 +20,18 @@ r.get('/', async (_req, res) => {
 // Tạo đặt xe mới
 r.post('/', async (req, res) => {
   const { vehicleId, stationId: stationIdInput, startTime, estDurationH } = req.body || {};
-  const userId = String((req.body && req.body.userId) || 'dev-user');
+  
+  // Lấy userId từ req.user (đã được extract từ headers bởi middleware)
+  // Fallback: nếu không có req.user thì lấy từ body hoặc dùng dev-user
+  const userId = String(
+    req.user?.id || 
+    req.user?.sub || 
+    (req.body && req.body.userId) || 
+    'dev-user'
+  );
+  
   console.log('BODY DEBUG:', req.body);
+  console.log('USER INFO:', { userId, user: req.user });
 
   if (!vehicleId || !startTime) {
     return res.status(400).json({ error: 'vehicleId and startTime are required' });
@@ -47,23 +56,19 @@ r.post('/', async (req, res) => {
     const estimateH = Number(estDurationH || 1);
     const priceEstimate = (vehicle.pricePerDay || 0) * (estimateH / 24);
 
-    const booking = await prisma.$transaction(async (tx) => {
-      const created = await tx.booking.create({
-        data: {
-          userId,
-          vehicleId,
-          stationId,
-          startTime: start,
-          status: 'PENDING',
-          priceEstimate,
-        },
-      });
-      await tx.vehicle.update({
-        where: { id: vehicleId },
-        data: { isAvailable: false },
-      });
-      return created;
+    // Tạo booking với status PENDING - CHƯA khóa xe
+    // Xe chỉ khóa khi thanh toán thành công (nhận message từ RabbitMQ)
+    const booking = await prisma.booking.create({
+      data: {
+        userId,
+        vehicleId,
+        stationId,
+        startTime: start,
+        status: 'PENDING',
+        priceEstimate,
+      },
     });
+    // KHÔNG khóa xe ở đây - chỉ khóa khi thanh toán thành công qua RabbitMQ
 
     // Gửi yêu cầu tạo ý định thanh toán sang payment-svc qua MQ (không chặn response)
     publishPaymentIntentRequest({ bookingId: booking.id, userId, stationId, amount: priceEstimate })
@@ -77,6 +82,8 @@ r.post('/', async (req, res) => {
 });
 
 // Xác nhận đã thanh toán cho booking
+// LƯU Ý: Endpoint này chỉ cập nhật booking status, KHÔNG khóa xe
+// Xe chỉ khóa khi nhận message từ RabbitMQ (trong mq.js handlePaymentSucceeded)
 r.post('/:id/mark-paid', async (req, res) => {
   const { id } = req.params;
   const { paymentId } = req.body || {};
@@ -92,20 +99,16 @@ r.post('/:id/mark-paid', async (req, res) => {
       return res.status(409).json({ error: 'Invalid booking state' });
     }
 
-    const [updated] = await prisma.$transaction([
-      prisma.booking.update({
-        where: { id },
-        data: {
-          status: 'CONFIRMED',
-          paymentId: String(paymentId),
-          confirmedAt: new Date()
-        }
-      }),
-      prisma.vehicle.update({
-        where: { id: booking.vehicleId },
-        data: { isAvailable: false }
-      })
-    ]);
+    // CHỈ cập nhật booking status, KHÔNG khóa xe
+    // Xe sẽ được khóa bởi RabbitMQ consumer khi nhận message payment.succeeded
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: {
+        status: 'CONFIRMED',
+        paymentId: String(paymentId),
+        confirmedAt: new Date()
+      }
+    });
 
     return res.json({ success: true, data: updated });
   } catch (err) {

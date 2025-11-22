@@ -4,7 +4,7 @@ services:
   # 🧱 Database
   mysql:
     image: mysql:8.0
-    container_name: ev-mysql
+    container_name: booking-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: evrental
@@ -51,8 +51,8 @@ services:
     environment:
       RABBITMQ_URL: amqp://rabbitmq:5672
       PORT: 3002
-      DATABASE_URL: mysql://evuser:evpass@mysql:3306/evrental?authPlugins=mysql_native_password
-      SHADOW_DATABASE_URL: mysql://root:root@mysql:3306/evrental_shadow?authPlugins=mysql_native_password
+      DATABASE_URL: mysql://evuser:evpass@booking-mysql:3306/evrental?authPlugins=mysql_native_password&connection_limit=10&pool_timeout=20
+      SHADOW_DATABASE_URL: mysql://root:root@booking-mysql:3306/evrental_shadow?authPlugins=mysql_native_password
       CORS_ORIGIN: "*"
     depends_on:
       mysql:
@@ -71,8 +71,8 @@ services:
       - ./services/fleet-svc/.env # ⚙️ load key AWS từ đây
     environment:
       PORT: 3003
-      DATABASE_URL: mysql://evuser:evpass@mysql:3306/evrental?authPlugins=mysql_native_password
-      SHADOW_DATABASE_URL: mysql://root:root@mysql:3306/evrental_shadow?authPlugins=mysql_native_password
+      DATABASE_URL: mysql://evuser:evpass@booking-mysql:3306/evrental?authPlugins=mysql_native_password&connection_limit=10&pool_timeout=20
+      SHADOW_DATABASE_URL: mysql://root:root@booking-mysql:3306/evrental_shadow?authPlugins=mysql_native_password
     depends_on:
       mysql:
         condition: service_healthy

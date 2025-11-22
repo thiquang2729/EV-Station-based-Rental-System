@@ -21,18 +21,16 @@ export async function startIntentConsumer(){
       const renterId = payload.userId ? String(payload.userId) : 'unknown';
       const stationId = payload.stationId ? String(payload.stationId) : 'unknown';
 
-      // idempotent: nếu đã có payment PENDING cho bookingId thì bỏ qua
-      const existing = await prepo.listPayments({ bookingId, status: PaymentStatus.PENDING, limit: 1 });
+      // idempotent: nếu đã có payment PENDING cho bookingId (bất kỳ method nào) thì bỏ qua
+      // KHÔNG tự động tạo payment VNPAY nữa - để user chọn method thanh toán
+      const existing = await prepo.listPayments({ bookingId, status: PaymentStatus.PENDING, limit: 10 });
       if (!existing || existing.length === 0) {
-        await prepo.createPayment({
-          bookingId,
-          renterId,
-          stationId,
-          amount,
-          method: PaymentMethod.VNPAY,
-          type: PaymentType.RENTAL_FEE,
-          description: `EVR Booking ${bookingId}`
-        });
+        // Chỉ tạo payment VNPAY nếu chưa có payment nào (giữ lại logic cũ cho backward compatibility)
+        // Nhưng tốt hơn là không tạo gì cả, để user chọn method
+        console.log(`[MQ INTENT] Received payment intent request for booking ${bookingId}, but skipping auto-create. User will choose payment method.`);
+        // Không tạo payment tự động - để user chọn method thanh toán (CASH hoặc VNPAY)
+      } else {
+        console.log(`[MQ INTENT] Booking ${bookingId} already has ${existing.length} PENDING payment(s), skipping auto-create.`);
       }
 
       ch.ack(msg);

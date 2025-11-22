@@ -1,32 +1,38 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Card from './ui/Card';
 import Input from './ui/Input';
 import Button from './ui/Button';
 import Select from './ui/Select';
 import { Payment, PaymentMethod, PaymentStatus } from '../types';
+import { AuthContext } from '../contexts/AuthContext';
 
 const API_BASE_URL = 'http://localhost:9080'; // Gateway URL
 
 /**
- * Fetches transactions for the current station
+ * Fetches transactions from all stations (không filter theo stationId)
  */
-const fetchTransactions = async (stationId: string): Promise<Payment[]> => {
-  const token = localStorage.getItem('accessToken');
-  
-  if (!token) {
-    throw new Error('No authentication token found. Please login again.');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/v1/payments?stationId=${stationId}&limit=50`, {
+const fetchTransactions = async (): Promise<Payment[]> => {
+  const url = `${API_BASE_URL}/api/v1/payments?limit=100`; // Lấy tất cả, không filter theo stationId
+  console.log('🔵 [BILLING API CALL]', {
     method: 'GET',
+    url: url,
+    credentials: 'include',
+    timestamp: new Date().toISOString()
+  });
+
+  const response = await fetch(url, {
+    method: 'GET',
+    credentials: 'include', // Gửi cookie để SSO hoạt động
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Authentication required. Please login again.');
+    }
     throw new Error('Failed to fetch transactions');
   }
 
@@ -35,7 +41,7 @@ const fetchTransactions = async (stationId: string): Promise<Payment[]> => {
 };
 
 /**
- * Creates a new payment at POS
+ * Creates a new payment at POS (status PENDING - chờ staff confirm)
  */
 const createPayment = async (paymentData: {
   bookingId: string;
@@ -44,25 +50,33 @@ const createPayment = async (paymentData: {
   method: PaymentMethod;
   description?: string;
 }): Promise<Payment> => {
-  const token = localStorage.getItem('accessToken');
+  const url = `${API_BASE_URL}/api/v1/pos/collect`;
+  const body = {
+    ...paymentData,
+    type: 'RENTAL_FEE'
+  };
   
-  if (!token) {
-    throw new Error('No authentication token found. Please login again.');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/v1/pos/collect`, {
+  console.log('🔵 [BILLING API CALL]', {
     method: 'POST',
+    url: url,
+    body: body,
+    credentials: 'include',
+    timestamp: new Date().toISOString()
+  });
+
+  const response = await fetch(url, {
+    method: 'POST',
+    credentials: 'include', // Gửi cookie để SSO hoạt động
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      ...paymentData,
-      type: 'RENTAL_FEE'
-    })
+    body: JSON.stringify(body)
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Authentication required. Please login again.');
+    }
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to create payment');
   }
@@ -71,8 +85,42 @@ const createPayment = async (paymentData: {
   return data.data;
 };
 
+/**
+ * Confirms a pending payment (chỉ staff/admin mới được confirm)
+ */
+const confirmPayment = async (paymentId: string): Promise<Payment> => {
+  const url = `${API_BASE_URL}/api/v1/pos/${paymentId}/confirm`;
+  
+  console.log('🔵 [BILLING API CALL]', {
+    method: 'POST',
+    url: url,
+    credentials: 'include',
+    timestamp: new Date().toISOString()
+  });
+
+  const response = await fetch(url, {
+    method: 'POST',
+    credentials: 'include', // Gửi cookie để SSO hoạt động
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Authentication required. Please login again.');
+    }
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to confirm payment');
+  }
+
+  const data = await response.json();
+  return data.data;
+};
+
 
 const POS: React.FC = () => {
+  const { currentUser } = useContext(AuthContext);
   const [transactions, setTransactions] = useState<Payment[]>([]);
   const [bookingId, setBookingId] = useState('');
   const [renterId, setRenterId] = useState('');
@@ -82,22 +130,37 @@ const POS: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [confirmingPaymentId, setConfirmingPaymentId] = useState<string | null>(null);
 
-  const stationId = "S001"; // Assuming staff is logged into a specific station
+  const stationId = "S001"; // Station ID để tạo payment mới (có thể lấy từ user context sau)
 
-  // Load transactions on component mount
+  // Load transactions on component mount - chỉ khi có user
   useEffect(() => {
+    if (currentUser) {
     loadTransactions();
-  }, []);
+    }
+  }, [currentUser]);
 
   const loadTransactions = async () => {
+    if (!currentUser) {
+      setError('Please login to view transactions');
+      return;
+    }
+
     setIsLoading(true);
+    setError('');
     try {
-      const data = await fetchTransactions(stationId);
+      const data = await fetchTransactions(); // Lấy tất cả transactions từ tất cả trạm
       setTransactions(data);
     } catch (error) {
       console.error('Failed to load transactions:', error);
-      setError('Failed to load transactions');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load transactions';
+      // Nếu lỗi authentication, không hiển thị error (sẽ redirect về login)
+      if (errorMessage.includes('authentication') || errorMessage.includes('token')) {
+        setError('');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -105,6 +168,10 @@ const POS: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentUser) {
+      setError('Please login to create payment');
+      return;
+    }
     if (!bookingId || !renterId || !amount) {
         setError('Booking ID, Renter ID, and Amount are required.');
         return;
@@ -131,9 +198,38 @@ const POS: React.FC = () => {
       setMethod(PaymentMethod.CASH);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create payment';
+      // Nếu lỗi authentication, không hiển thị error (sẽ redirect về login)
+      if (errorMessage.includes('authentication') || errorMessage.includes('token')) {
+        setError('');
+      } else {
       setError(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmPayment = async (paymentId: string) => {
+    if (!currentUser) {
+      setError('Please login to confirm payment');
+      return;
+    }
+    setConfirmingPaymentId(paymentId);
+    setError('');
+    try {
+      await confirmPayment(paymentId);
+      // Refresh transactions sau khi confirm
+      await loadTransactions();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to confirm payment';
+      // Nếu lỗi authentication, không hiển thị error (sẽ redirect về login)
+      if (errorMessage.includes('authentication') || errorMessage.includes('token')) {
+        setError('');
+      } else {
+        setError(errorMessage);
+      }
+    } finally {
+      setConfirmingPaymentId(null);
     }
   };
   
@@ -150,7 +246,7 @@ const POS: React.FC = () => {
     <div className="space-y-6">
        <header>
         <h2 className="text-3xl font-bold leading-tight text-gray-900">Station Point of Sale (POS)</h2>
-        <p className="mt-1 text-sm text-gray-500">Collect payments and manage transactions for Station <span className="font-semibold">{stationId}</span>.</p>
+        <p className="mt-1 text-sm text-gray-500">Collect payments and manage transactions from all stations.</p>
       </header>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-1">
@@ -194,16 +290,18 @@ const POS: React.FC = () => {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {transactions.length === 0 ? (
                                         <tr>
-                                            <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                                            <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                                                 No transactions found
                                             </td>
                                         </tr>
@@ -211,6 +309,7 @@ const POS: React.FC = () => {
                                         transactions.map((tx) => (
                                         <tr key={tx.id}>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{tx.bookingId}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-semibold">{tx.stationId || 'N/A'}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{tx.amount.toLocaleString('vi-VN')} VND</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{tx.method}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -219,6 +318,19 @@ const POS: React.FC = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(tx.createdAt).toLocaleTimeString()}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                {tx.status === PaymentStatus.PENDING ? (
+                                                    <Button
+                                                        onClick={() => handleConfirmPayment(tx.id)}
+                                                        disabled={confirmingPaymentId === tx.id}
+                                                        className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
+                                                    >
+                                                        {confirmingPaymentId === tx.id ? 'Confirming...' : 'Confirm'}
+                                                    </Button>
+                                                ) : (
+                                                    <span className="text-gray-400 text-xs">-</span>
+                                                )}
+                                            </td>
                                         </tr>
                                         ))
                                     )}

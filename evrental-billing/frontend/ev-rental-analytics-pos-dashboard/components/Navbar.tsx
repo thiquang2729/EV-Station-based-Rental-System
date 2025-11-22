@@ -43,7 +43,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage }) => {
 
 
   const renderNavItems = () => {
-    if (!currentUser) return null;
+    if (!currentUser?.role) return null;
 
     switch (currentUser.role) {
       case UserRole.ADMIN:
@@ -106,7 +106,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage }) => {
                   </span>
                   <div className="text-left hidden md:block">
                       <p className="text-sm font-semibold text-gray-800">{currentUser.name}</p>
-                      <p className="text-xs text-gray-500 capitalize">{currentUser.role.toLowerCase()}</p>
+                      <p className="text-xs text-gray-500 capitalize">{currentUser.role?.toLowerCase() || 'user'}</p>
                   </div>
                   <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

@@ -6,7 +6,7 @@ const path = require("path");
 const router = express.Router();
 
 const SAMPLE_DATA_PATH = path.join(__dirname, "..", "data", "stations.sample.json");
-const DEFAULT_FALLBACK_URL = "http://localhost:3002/api/v1/stations";
+const DEFAULT_FALLBACK_URL = "http://localhost:9080/api/v1/stations";
 
 const toBoolean = (value, defaultValue) => {
   if (value === undefined) {

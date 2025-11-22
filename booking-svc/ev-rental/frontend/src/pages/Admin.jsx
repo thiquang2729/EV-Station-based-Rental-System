@@ -132,23 +132,23 @@ function VehiclesAdmin() {
     <div className="space-y-6">
       <form onSubmit={onSubmit} className="rounded-xl border p-4 bg-white grid grid-cols-1 md:grid-cols-6 gap-3">
         <input required placeholder="ID" className="input border p-2 rounded" value={form.id} onChange={(e) => setForm({ ...form, id: e.target.value })} />
-        <input placeholder="Name" className="input border p-2 rounded" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <input placeholder="Tên xe" className="input border p-2 rounded" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         <select required className="border p-2 rounded" value={form.stationId} onChange={(e) => setForm({ ...form, stationId: e.target.value })}>
-          <option value="">Station</option>
+          <option value="">Chọn trạm</option>
           {stations.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
-        <input required placeholder="Type" className="input border p-2 rounded" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} />
-        <input required placeholder="Plate" className="input border p-2 rounded" value={form.plate} onChange={(e) => setForm({ ...form, plate: e.target.value })} />
-        <input required type="number" min="0" placeholder="Price/day" className="input border p-2 rounded" value={form.pricePerDay} onChange={(e) => setForm({ ...form, pricePerDay: e.target.value })} />
+        <input required placeholder="Loại xe" className="input border p-2 rounded" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} />
+        <input required placeholder="Biển số" className="input border p-2 rounded" value={form.plate} onChange={(e) => setForm({ ...form, plate: e.target.value })} />
+        <input required type="number" min="0" placeholder="Giá/ngày" className="input border p-2 rounded" value={form.pricePerDay} onChange={(e) => setForm({ ...form, pricePerDay: e.target.value })} />
         <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="md:col-span-3" />
-        <input placeholder="Or paste Image URL (optional)" className="border p-2 rounded md:col-span-3" value={imageUrlInput} onChange={(e) => setImageUrlInput(e.target.value)} />
-        <textarea placeholder="Description (optional)" className="border p-2 rounded md:col-span-6" rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        <button disabled={submitting} className="btn-soild md:col-span-3">{submitting ? 'Saving...' : 'Add Vehicle'}</button>
+        <input placeholder="Hoặc dán URL ảnh (tùy chọn)" className="border p-2 rounded md:col-span-3" value={imageUrlInput} onChange={(e) => setImageUrlInput(e.target.value)} />
+        <textarea placeholder="Mô tả (tùy chọn)" className="border p-2 rounded md:col-span-6" rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+        <button disabled={submitting} className="btn-soild md:col-span-3">{submitting ? 'Đang lưu...' : 'Thêm Xe'}</button>
       </form>
       {submitError && <div className="text-red-600 text-sm mt-2">{submitError}</div>}
       {updateError && <div className="text-red-600 text-sm mt-1">{updateError}</div>}
 
-      {loading && <div>Loading...</div>}
+      {loading && <div>Đang tải...</div>}
       {error && <div className="text-red-600">{error}</div>}
       {!loading && !error && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
@@ -212,9 +212,9 @@ function VehiclesAdmin() {
 
                 <div className="mt-3 flex gap-2">
                   <button disabled={updatingId === v.id} onClick={() => onUpdate(v.id)} className="btn-soild">
-                    {updatingId === v.id ? 'Saving...' : 'Update'}
+                    {updatingId === v.id ? 'Đang lưu...' : 'Cập nhật'}
                   </button>
-                  <button onClick={() => onDelete(v.id)} className="btn-outline">Delete</button>
+                  <button onClick={() => onDelete(v.id)} className="btn-outline">Xóa</button>
                 </div>
               </div>
             );
@@ -258,14 +258,14 @@ function StationsAdmin() {
   return (
     <div className="space-y-6">
       <form onSubmit={onSubmit} className="rounded-xl border p-4 bg-white grid grid-cols-1 md:grid-cols-5 gap-3">
-        <input required placeholder="Name" className="border p-2 rounded" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <input placeholder="Address" className="border p-2 rounded" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-        <input required type="number" step="any" placeholder="Lat" className="border p-2 rounded" value={form.lat} onChange={(e) => setForm({ ...form, lat: e.target.value })} />
-        <input required type="number" step="any" placeholder="Lng" className="border p-2 rounded" value={form.lng} onChange={(e) => setForm({ ...form, lng: e.target.value })} />
-        <button className="btn-soild">Add Station</button>
+        <input required placeholder="Tên trạm" className="border p-2 rounded" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <input placeholder="Địa chỉ" className="border p-2 rounded" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+        <input required type="number" step="any" placeholder="Vĩ độ (Lat)" className="border p-2 rounded" value={form.lat} onChange={(e) => setForm({ ...form, lat: e.target.value })} />
+        <input required type="number" step="any" placeholder="Kinh độ (Lng)" className="border p-2 rounded" value={form.lng} onChange={(e) => setForm({ ...form, lng: e.target.value })} />
+        <button className="btn-soild">Thêm Trạm</button>
       </form>
 
-      {loading && <div>Loading...</div>}
+      {loading && <div>Đang tải...</div>}
       {error && <div className="text-red-600">{error}</div>}
       {!loading && !error && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -275,7 +275,7 @@ function StationsAdmin() {
               <div className="text-sm text-gray-500">{s.address}</div>
               <div className="text-xs text-gray-500">({s.lat}, {s.lng})</div>
               <div className="mt-3 flex gap-2">
-                <button onClick={() => onDelete(s.id)} className="btn-outline">Delete</button>
+                <button onClick={() => onDelete(s.id)} className="btn-outline">Xóa</button>
               </div>
             </div>
           ))}
@@ -361,16 +361,16 @@ function IncidentsAdmin() {
           {stations.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
         <select className="border p-2 rounded" value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })}>
-          <option value="LOW">LOW</option>
-          <option value="MEDIUM">MEDIUM</option>
-          <option value="HIGH">HIGH</option>
+          <option value="LOW">THẤP</option>
+          <option value="MEDIUM">TRUNG BÌNH</option>
+          <option value="HIGH">CAO</option>
         </select>
         <textarea required rows={2} className="border p-2 rounded md:col-span-2 lg:col-span-4" placeholder="Mô tả sự cố" value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} />
-        <button className="btn-soild md:col-span-2 lg:col-span-4" disabled={submitting}>{submitting ? 'Saving...' : 'Report Incident'}</button>
+        <button className="btn-soild md:col-span-2 lg:col-span-4" disabled={submitting}>{submitting ? 'Đang lưu...' : 'Báo Cáo Sự Cố'}</button>
       </form>
       {submitError && <div className="text-red-600 text-sm">{submitError}</div>}
 
-      {loading && <div>Loading...</div>}
+      {loading && <div>Đang tải...</div>}
       {error && <div className="text-red-600">{error}</div>}
       {!loading && !error && (
         <div className="rounded-xl border bg-white overflow-x-auto">
@@ -384,7 +384,7 @@ function IncidentsAdmin() {
                 <th className="px-3 py-2 text-left">Trạng thái</th>
                 <th className="px-3 py-2 text-left">Mô tả</th>
                 <th className="px-3 py-2 text-left">Thời gian</th>
-                <th className="px-3 py-2 text-left">Trạng thái</th>
+                <th className="px-3 py-2 text-left">Hành động</th>
               </tr>
             </thead>
             <tbody>
@@ -465,7 +465,7 @@ function BookingsAdmin() {
     } catch (e) { alert(e.message || 'Return failed'); }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Đang tải...</div>;
   if (error) return <div className="text-red-600">{error}</div>;
   return (
     <div className="rounded-xl border bg-white">
@@ -474,13 +474,13 @@ function BookingsAdmin() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-3 py-2 text-left">ID</th>
-              <th className="px-3 py-2 text-left">User</th>
-              <th className="px-3 py-2 text-left">Vehicle</th>
-              <th className="px-3 py-2 text-left">Station</th>
-              <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-left">Start</th>
-              <th className="px-3 py-2 text-left">End</th>
-              <th className="px-3 py-2 text-left">Actions</th>
+              <th className="px-3 py-2 text-left">Người dùng</th>
+              <th className="px-3 py-2 text-left">Xe</th>
+              <th className="px-3 py-2 text-left">Trạm</th>
+              <th className="px-3 py-2 text-left">Trạng thái</th>
+              <th className="px-3 py-2 text-left">Bắt đầu</th>
+              <th className="px-3 py-2 text-left">Kết thúc</th>
+              <th className="px-3 py-2 text-left">Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -495,7 +495,7 @@ function BookingsAdmin() {
                 <td className="px-3 py-2">{b.endTime || '-'}</td>
                 <td className="px-3 py-2">
                   {b.status !== 'RETURNED' ? (
-                    <button className="btn-outline" onClick={() => onReturn(b.id)}>Return</button>
+                    <button className="btn-outline" onClick={() => onReturn(b.id)}>Trả xe</button>
                   ) : (
                     <span className="text-gray-400">-</span>
                   )}
@@ -513,12 +513,12 @@ export default function Admin() {
   const [tab, setTab] = useState('vehicles');
   return (
     <div className="max-padd-container py-10">
-      <h3 className="mb-6">Admin</h3>
+      <h3 className="mb-6">Quản Trị</h3>
       <div className="flex gap-2 mb-6">
-        <button className={`btn-outline ${tab === 'vehicles' ? 'bg-gray-100' : ''}`} onClick={() => setTab('vehicles')}>Vehicles</button>
-        <button className={`btn-outline ${tab === 'stations' ? 'bg-gray-100' : ''}`} onClick={() => setTab('stations')}>Stations</button>
-        <button className={`btn-outline ${tab === 'bookings' ? 'bg-gray-100' : ''}`} onClick={() => setTab('bookings')}>Bookings</button>
-        <button className={`btn-outline ${tab === 'incidents' ? 'bg-gray-100' : ''}`} onClick={() => setTab('incidents')}>Incidents</button>
+        <button className={`btn-outline ${tab === 'vehicles' ? 'bg-gray-100' : ''}`} onClick={() => setTab('vehicles')}>Quản Lý Xe</button>
+        <button className={`btn-outline ${tab === 'stations' ? 'bg-gray-100' : ''}`} onClick={() => setTab('stations')}>Quản Lý Trạm</button>
+        <button className={`btn-outline ${tab === 'bookings' ? 'bg-gray-100' : ''}`} onClick={() => setTab('bookings')}>Quản Lý Đơn Hàng</button>
+        <button className={`btn-outline ${tab === 'incidents' ? 'bg-gray-100' : ''}`} onClick={() => setTab('incidents')}>Sự Cố</button>
       </div>
       {tab === 'vehicles' && <VehiclesAdmin />}
       {tab === 'stations' && <StationsAdmin />}

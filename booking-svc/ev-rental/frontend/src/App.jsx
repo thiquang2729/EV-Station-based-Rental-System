@@ -13,6 +13,7 @@ import MyBookings from './pages/MyBookings';
 import Home from './pages/Home';
 import Admin from './pages/Admin';
 import AuthCallback from './pages/AuthCallback';
+import RequireAdmin from './components/RequireAdmin';
 
 const App = () => {
   const location = useLocation();
@@ -31,7 +32,11 @@ const App = () => {
             <Route path="/blog" element={<Blog />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/my-bookings" element={<MyBookings />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin" element={
+              <RequireAdmin>
+                <Admin />
+              </RequireAdmin>
+            } />
             <Route path="/auth/callback" element={<AuthCallback />} />
           </Routes>
         </ErrorBoundary>

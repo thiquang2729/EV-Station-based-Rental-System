@@ -1,6 +1,5 @@
 const amqp = require('amqplib');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('./prisma');
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://rabbitmq:5672';
 const EXCHANGE = 'evrental';
@@ -9,27 +8,52 @@ const ROUTING_KEY = 'payment.succeeded';
 const INTENT_ROUTING_KEY = 'payment.intent.request';
 
 async function handlePaymentSucceeded(msg) {
-  const payload = JSON.parse(msg.content.toString());
-  const { bookingId, paymentId, amount, status } = payload || {};
-  if (!bookingId || !paymentId || status !== 'SUCCEEDED') return;
+  try {
+    const payload = JSON.parse(msg.content.toString());
+    console.log(`[MQ] Received payment.succeeded message:`, payload);
+    
+    const { bookingId, paymentId, amount, status } = payload || {};
+    if (!bookingId || !paymentId) {
+      console.log(`[MQ] Missing bookingId or paymentId, skipping. bookingId=${bookingId}, paymentId=${paymentId}`);
+      return;
+    }
+    
+    if (status !== 'SUCCEEDED') {
+      console.log(`[MQ] Status is not SUCCEEDED (status=${status}), skipping`);
+      return;
+    }
 
-  const booking = await prisma.booking.findUnique({ where: { id: String(bookingId) } });
-  if (!booking) return;
-  if (booking.status !== 'PENDING') return;
+    const booking = await prisma.booking.findUnique({ where: { id: String(bookingId) } });
+    if (!booking) {
+      console.log(`[MQ] Booking ${bookingId} not found, skipping`);
+      return;
+    }
+    
+    if (booking.status !== 'PENDING') {
+      console.log(`[MQ] Booking ${bookingId} status is ${booking.status}, not PENDING. Skipping.`);
+      return;
+    }
 
-  await prisma.$transaction([
-    prisma.booking.update({
-      where: { id: String(bookingId) },
-      data: {
-        status: 'CONFIRMED'
-      }
-    }),
-    prisma.vehicle.update({
-      where: { id: booking.vehicleId },
-      data: { isAvailable: false }
-    })
-  ]);
-  console.log(`[MQ] Updated booking ${bookingId} to CONFIRMED and locked vehicle ${booking.vehicleId}`);
+    console.log(`[MQ] Processing payment succeeded for booking ${bookingId}, vehicle ${booking.vehicleId}`);
+    
+    await prisma.$transaction([
+      prisma.booking.update({
+        where: { id: String(bookingId) },
+        data: {
+          status: 'CONFIRMED',
+          paymentId: String(paymentId)
+        }
+      }),
+      prisma.vehicle.update({
+        where: { id: booking.vehicleId },
+        data: { isAvailable: false }
+      })
+    ]);
+    console.log(`[MQ] ✓ Updated booking ${bookingId} to CONFIRMED and locked vehicle ${booking.vehicleId}`);
+  } catch (error) {
+    console.error(`[MQ] Error handling payment.succeeded:`, error);
+    throw error; // Re-throw để nack message
+  }
 }
 
 async function startConsumer() {

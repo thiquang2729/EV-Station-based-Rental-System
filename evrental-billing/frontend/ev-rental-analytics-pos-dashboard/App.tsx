@@ -15,7 +15,7 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     // Set default page on login
-    if (currentUser) {
+    if (currentUser?.role) {
       switch (currentUser.role) {
         case UserRole.ADMIN:
           setCurrentPage('DASHBOARD');
@@ -41,16 +41,18 @@ const AppContent: React.FC = () => {
   const hasPaymentSuccess = (() => {
     try {
       const url = new URL(window.location.href);
-      return url.searchParams.get('vnp_status') === 'success';
+      // Hỗ trợ cả VNPAY (vnp_status) và Cash payment (payment_status)
+      return url.searchParams.get('vnp_status') === 'success' || url.searchParams.get('payment_status') === 'success';
     } catch { return false; }
   })();
 
   useEffect(() => {
-    // Nếu VNPay redirect về với trạng thái thành công, hiển thị trang PaymentSuccess
+    // Nếu thanh toán thành công (VNPAY hoặc Cash), hiển thị trang PaymentSuccess
     try {
       const url = new URL(window.location.href);
       const vnpStatus = url.searchParams.get('vnp_status');
-      if (vnpStatus === 'success') {
+      const paymentStatus = url.searchParams.get('payment_status');
+      if (vnpStatus === 'success' || paymentStatus === 'success') {
         setCurrentPage('PAYMENT_SUCCESS');
         return;
       }
@@ -69,9 +71,9 @@ const AppContent: React.FC = () => {
     // Role-based page access control
     switch (currentPage) {
       case 'DASHBOARD':
-        return currentUser.role === UserRole.ADMIN ? <Dashboard /> : <h2>Access Denied</h2>;
+        return currentUser?.role === UserRole.ADMIN ? <Dashboard /> : <h2>Access Denied</h2>;
       case 'POS':
-        return currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.STAFF ? <POS /> : <h2>Access Denied</h2>;
+        return currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.STAFF ? <POS /> : <h2>Access Denied</h2>;
       case 'BOOKING':
         if (hasBookingParams) {
           return <Booking setCurrentPage={setCurrentPage} />;
@@ -95,7 +97,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
-      <Navbar currentPage={currentPage} setCurrentPage={setCurrentPage} />
+      {currentUser && <Navbar currentPage={currentPage} setCurrentPage={setCurrentPage} />}
       <main className="p-4 sm:p-6 lg:p-8">
         {renderPage()}
       </main>

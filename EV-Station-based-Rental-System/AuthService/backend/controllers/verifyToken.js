@@ -13,7 +13,12 @@ const extractTokenFromHeader = (req) => {
 };
 
 const verifyToken = (req, res, next) => {
-  const token = extractTokenFromHeader(req);
+  // Try to get token from header first, then from cookie (for SSO)
+  let token = extractTokenFromHeader(req);
+  
+  if (!token && req.cookies) {
+    token = req.cookies.accessToken;
+  }
 
   if (!token) {
     return sendError(res, {

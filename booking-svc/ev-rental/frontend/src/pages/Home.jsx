@@ -53,8 +53,8 @@ const CategoryCards = ({ onSelectType }) => {
 
   return (
     <div className="max-padd-container py-8">
-      <h3 className="mb-5">Pick Your Perfect Match</h3>
-      {loading && <div className="text-gray-500">Loading categories...</div>}
+      <h3 className="mb-5">Chọn Chiếc Xe Hoàn Hảo Của Bạn</h3>
+      {loading && <div className="text-gray-500">Đang tải danh mục...</div>}
       {error && <div className="text-red-600">{error}</div>}
       {!loading && !error && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-5">
@@ -70,13 +70,13 @@ const CategoryCards = ({ onSelectType }) => {
                 {c.imageUrl ? (
                   <img src={c.imageUrl} alt={c.type} className="w-full h-full object-contain" />
                 ) : (
-                  <div className="text-gray-300">image</div>
+                  <div className="text-gray-300">hình ảnh</div>
                 )}
               </div>
             </button>
           ))}
           {!cards.length && (
-            <div className="text-gray-600">No categories found.</div>
+            <div className="text-gray-600">Không tìm thấy danh mục nào.</div>
           )}
         </div>
       )}
@@ -106,7 +106,7 @@ const SearchBar = ({ stationId, setStationId, station, onSearch, searching }) =>
           onClick={handleOpenMap}
           disabled={!hasCoords}
           className={`col-span-1 h-full flexCenter text-white ${hasCoords ? 'bg-emerald-600 cursor-pointer' : 'bg-gray-300 cursor-not-allowed'}`}
-          title={hasCoords ? 'Open on Google Maps' : 'Select a station with coordinates'}
+          title={hasCoords ? 'Mở trên Google Maps' : 'Chọn trạm có tọa độ'}
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
             <path fillRule="evenodd" d="M12 2.25c-3.728 0-6.75 2.94-6.75 6.563 0 4.661 5.635 10.431 6.014 10.826a.75.75 0 001.072 0c.379-.395 6.014-6.165 6.014-10.826 0-3.623-3.022-6.563-6.75-6.563zm0 9.188a2.625 2.625 0 100-5.25 2.625 2.625 0 000 5.25z" clipRule="evenodd" />
@@ -117,7 +117,7 @@ const SearchBar = ({ stationId, setStationId, station, onSearch, searching }) =>
           onClick={() => onSearch && onSearch()}
           disabled={!stationId || searching}
           className={`col-span-1 h-full flexCenter ${(!stationId || searching) ? 'bg-gray-300 cursor-not-allowed' : 'bg-black cursor-pointer'} text-white`}
-          title={stationId ? 'Search vehicles' : 'Select a location first'}
+          title={stationId ? 'Tìm xe' : 'Chọn địa điểm trước'}
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
             <path fillRule="evenodd" d="M10.5 3.75a6.75 6.75 0 104.204 12.036l3.255 3.255a.75.75 0 101.06-1.06l-3.255-3.255A6.75 6.75 0 0010.5 3.75zm-5.25 6.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0z" clipRule="evenodd" />
@@ -142,8 +142,8 @@ const VehicleFooter = () => {
 
   return (
     <div className="max-padd-container py-12">
-      <h3 className="mb-6">Available Vehicles</h3>
-      {loading && <div>Loading vehicles…</div>}
+      <h3 className="mb-6">Xe Có Sẵn</h3>
+      {loading && <div>Đang tải danh sách xe...</div>}
       {error && <div className="text-red-600">{error}</div>}
       {!loading && !error && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
@@ -153,12 +153,12 @@ const VehicleFooter = () => {
                 {v.imageUrl ? (
                   <img src={v.imageUrl} alt={v.name || v.id} className="w-full h-full object-contain" />
                 ) : (
-                  <div className="text-gray-300">No image</div>
+                  <div className="text-gray-300">Không có ảnh</div>
                 )}
               </div>
               <div className="p-4">
                 <div className="text-base font-semibold mb-1">{v.name || v.id}</div>
-                <div className="text-sm text-gray-500 mb-1">{v.type || 'Vehicle'}</div>
+                <div className="text-sm text-gray-500 mb-1">{v.type || 'Xe'}</div>
                 <div className="text-sm">{v.isAvailable ? 'Sẵn sàng' : 'Không sẵn sàng'}</div>
                 {v.pricePerDay !== undefined && (
                   <div className="mt-2 font-semibold">{Number(v.pricePerDay||0).toLocaleString('vi-VN')} đ/ngày</div>
@@ -175,7 +175,7 @@ const VehicleFooter = () => {
 const VehiclesResult = ({ items = [], loading, error, stationName, title }) => {
   return (
     <div id="results" className="max-padd-container py-12">
-      <h3 className="mb-6">{title || (stationName ? `Vehicles at ${stationName}` : 'Vehicles')}</h3>
+      <h3 className="mb-6">{title || (stationName ? `Xe tại ${stationName}` : 'Danh sách xe')}</h3>
       {loading && <div>Đang tải danh sách xe…</div>}
       {error && <div className="text-red-600">{error}</div>}
       {!loading && !error && (
@@ -187,12 +187,12 @@ const VehiclesResult = ({ items = [], loading, error, stationName, title }) => {
                   {v.imageUrl ? (
                     <img src={v.imageUrl} alt={v.name || v.id} className="w-full h-full object-contain" />
                   ) : (
-                    <div className="text-gray-300">No image</div>
+                    <div className="text-gray-300">Không có ảnh</div>
                   )}
                 </div>
                 <div className="p-4">
                   <div className="text-base font-semibold mb-1">{v.name || v.id}</div>
-                  <div className="text-sm text-gray-500 mb-1">{v.type || 'Vehicle'}</div>
+                  <div className="text-sm text-gray-500 mb-1">{v.type || 'Xe'}</div>
                   <div className="text-sm">{v.isAvailable ? 'Sẵn sàng' : 'Không sẵn sàng'}</div>
                   {v.pricePerDay !== undefined && (
                   <div className="mt-2 font-semibold">{Number(v.pricePerDay||0).toLocaleString('vi-VN')} đ/ngày</div>
@@ -307,7 +307,7 @@ export default function Home() {
     <div className="min-h-screen">
       <section className="flexCenter pt-16 pb-14 bg-gradient-to-b from-white to-gray-50">
         <div className="max-padd-container text-center">
-          <h1 className="mb-6">Your Road Trip Starts Here</h1>
+          <h1 className="mb-6">Hành Trình Của Bạn Bắt Đầu Tại Đây</h1>
           <div className="flexCenter">
             <SearchBar stationId={stationId} setStationId={setStationId} station={selectedStation} onSearch={onSearch} searching={loading} />
           </div>
@@ -321,7 +321,7 @@ export default function Home() {
           loading={loading}
           error={error}
           stationName={stationName}
-          title={selectedType ? `Vehicles: ${selectedType}` : undefined}
+          title={selectedType ? `Xe loại: ${selectedType}` : undefined}
         />
       )}
       {/* Always show a footer with available vehicles from the fleet API */}

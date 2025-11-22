@@ -17,17 +17,34 @@ const rawOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(",").map((origin) => origin.trim()).filter(Boolean)
   : [];
 
-const whitelist = rawOrigins.length > 0 ? rawOrigins : ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:8060", "http://127.0.0.1:8060"];
+// Thêm tất cả các frontend ports cho SSO
+const whitelist = rawOrigins.length > 0 ? rawOrigins : [
+  "http://localhost:5173",  // Billing/Analytics Frontend (Vite)
+  "http://127.0.0.1:5173",
+  "http://localhost:3004",  // Booking Frontend (Docker)
+  "http://127.0.0.1:3004",
+  "http://localhost:8060",  // Auth Frontend (Docker)
+  "http://127.0.0.1:8060",
+  "http://localhost:9080",  // API Gateway
+  "http://127.0.0.1:9080"
+];
 
 const corsOptions = {
   origin(origin, callback) {
-    if (!origin || whitelist.includes(origin)) {
+    // Allow requests with no origin (mobile apps, Postman, etc)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Check if origin is in whitelist
+    if (whitelist.includes(origin)) {
       callback(null, true);
     } else {
+      console.warn(`CORS blocked origin: ${origin}`);
       callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
-  credentials: true,
+  credentials: true, // Quan trọng cho cookie SSO
 };
 
 app.use(cors(corsOptions));

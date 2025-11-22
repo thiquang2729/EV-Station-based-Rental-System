@@ -1,6 +1,5 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import { User, UserRole } from '../types';
-import { getUserFromToken } from '../utils/jwt';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -8,17 +7,6 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   error: string | null;
-}
-
-interface LoginResponse {
-  user: {
-    id: string;
-    fullName: string;
-    email: string;
-    role: string;
-  };
-  accessToken: string;
-  refreshToken: string;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -30,169 +18,82 @@ export const AuthContext = createContext<AuthContextType>({
 });
 
 const API_BASE_URL = 'http://localhost:9080'; // Gateway URL
-const DISABLE_AUTH = true; // Temporary override while auth service is unavailable
+const AUTH_FRONTEND_URL = 'http://localhost:8060'; // Auth UI (Docker)
+const DISABLE_AUTH = false; // Enable SSO authentication
 
-const AUTH_DISABLED_USER: User = {
-  id: 'demo-admin',
-  name: 'Demo Admin',
-  role: UserRole.ADMIN,
+const isPublicAccess = () => {
+  try {
+    const url = new URL(window.location.href);
+    return url.searchParams.has('bookingId') || url.searchParams.get('vnp_status') === 'success';
+  } catch {
+    return false;
+  }
 };
 
 export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    if (DISABLE_AUTH) {
-      return AUTH_DISABLED_USER;
-    }
-    return null;
-  });
-  const [isLoading, setIsLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check for existing token on app load
+  // Fetch current user from cookie (SSO)
   useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  const fetchCurrentUser = async () => {
     if (DISABLE_AUTH) {
+      setIsLoading(false);
       return;
     }
 
-    // Try to get token from multiple sources (compatibility with auth frontend)
-    let token = localStorage.getItem('accessToken');
-    let userInfo: any = null;
-    
-    // Check if auth frontend stored token in 'auth_state' (Redux persist)
-    if (!token) {
-      const authState = localStorage.getItem('auth_state');
-      if (authState) {
-        try {
-          const parsed = JSON.parse(authState);
-          token = parsed.accessToken;
-          if (parsed.user) {
-            userInfo = parsed.user;
-          }
-        } catch (e) {
-          console.warn('Failed to parse auth_state:', e);
-        }
-      }
+    // Nếu là public access (có bookingId hoặc vnp_status), skip auth check
+    if (isPublicAccess()) {
+      console.log('🔵 [BILLING] Public access detected, skipping auth check');
+      setCurrentUser(null);
+      setIsLoading(false);
+      return;
     }
-    
-    if (token) {
-      // Decode token to get user info
-      const tokenUser = getUserFromToken(token);
-      if (tokenUser) {
-        // Priority 1: Use fullName from token (if available)
-        if (tokenUser.fullName) {
-          setCurrentUser({
-            id: tokenUser.id,
-            name: tokenUser.fullName,
-            role: tokenUser.role as UserRole
-          });
-          // Save to localStorage for consistency
-          localStorage.setItem('userInfo', JSON.stringify({
-            fullName: tokenUser.fullName,
-            name: tokenUser.fullName
-          }));
-          return;
-        }
-        
-        // Priority 2: If we have user info from auth_state, use it
-        if (userInfo && userInfo.fullName) {
-          setCurrentUser({
-            id: tokenUser.id,
-            name: userInfo.fullName,
-            role: tokenUser.role as UserRole
-          });
-          // Save to our format for consistency
-          localStorage.setItem('userInfo', JSON.stringify({
-            fullName: userInfo.fullName,
-            name: userInfo.fullName
-          }));
-          // Also save token in our format
-          localStorage.setItem('accessToken', token);
-          return;
-        }
-        
-        // Priority 3: Try to get full user info from localStorage
-        const savedUserInfo = localStorage.getItem('userInfo');
-        if (savedUserInfo) {
-          try {
-            const saved = JSON.parse(savedUserInfo);
-            setCurrentUser({
-              id: tokenUser.id,
-              name: saved.fullName || saved.name || 'User',
-              role: tokenUser.role as UserRole
-            });
-          } catch (e) {
-            // If saved info is invalid, fetch from API
-            fetchUserInfo(tokenUser.id, token);
-          }
-        } else {
-          // Priority 4: Fetch user info from API
-          fetchUserInfo(tokenUser.id, token);
-        }
-      } else {
-        // Token invalid, clear it
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('userInfo');
-        localStorage.removeItem('auth_state');
-      }
-    }
-  }, []);
 
-  const fetchUserInfo = async (userId: string, token: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/users/${userId}`, {
+      const url = `${API_BASE_URL}/api/v1/auth/me`;
+      console.log('🔵 [BILLING API CALL]', {
         method: 'GET',
+        url: url,
+        timestamp: new Date().toISOString()
+      });
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'include', // Quan trọng: gửi cookie
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       });
 
       if (response.ok) {
         const data = await response.json();
-        const userData = data.data || data;
-        const userInfo = {
-          id: userData.id || userId,
-          name: userData.fullName || userData.name || 'User',
-          role: userData.role as UserRole
-        };
-        
-        // Save user info to localStorage
-        localStorage.setItem('userInfo', JSON.stringify({
-          fullName: userInfo.name,
-          name: userInfo.name
-        }));
-        
-        setCurrentUser(userInfo);
-      } else {
-        // If API fails, use token info only
-        const tokenUser = getUserFromToken(token);
-        if (tokenUser) {
+        if (data.success && data.data.user) {
+          const user = data.data.user;
           setCurrentUser({
-            id: tokenUser.id,
-            name: 'User', // Fallback name
-            role: tokenUser.role as UserRole
+            id: user.id,
+            name: user.fullName || 'User',
+            role: user.role as UserRole
           });
         }
+      } else {
+        // User chưa đăng nhập hoặc token hết hạn
+        setCurrentUser(null);
       }
     } catch (error) {
-      console.error('Failed to fetch user info:', error);
-      // Fallback to token info only
-      const tokenUser = getUserFromToken(token);
-      if (tokenUser) {
-        setCurrentUser({
-          id: tokenUser.id,
-          name: 'User', // Fallback name
-          role: tokenUser.role as UserRole
-        });
-      }
+      console.error('Failed to fetch current user:', error);
+      setCurrentUser(null);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const login = async (email: string, password: string) => {
     if (DISABLE_AUTH) {
-      setError(null);
-      setCurrentUser(AUTH_DISABLED_USER);
       return;
     }
 
@@ -200,39 +101,30 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+      const url = `${API_BASE_URL}/api/v1/auth/login`;
+      const body = { email, password };
+      
+      console.log('🔵 [BILLING API CALL]', {
         method: 'POST',
+        url: url,
+        body: { email, password: '***' }, // Ẩn password
+        timestamp: new Date().toISOString()
+      });
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        credentials: 'include', // Gửi và nhận cookie
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify(body)
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
-        const { user, accessToken, refreshToken } = data.data;
-        
-        // Store tokens
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        
-        // Decode token to get fullName (if included in token)
-        const tokenUser = getUserFromToken(accessToken);
-        const userName = tokenUser?.fullName || user.fullName;
-        
-        // Store user info for later use
-        localStorage.setItem('userInfo', JSON.stringify({
-          fullName: userName,
-          name: userName
-        }));
-        
-        // Set user in context
-        setCurrentUser({
-          id: user.id,
-          name: userName,
-          role: user.role as UserRole
-        });
+        // Cookie đã được set, fetch lại user
+        await fetchCurrentUser();
       } else {
         throw new Error(data.message || 'Login failed');
       }
@@ -245,22 +137,37 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     if (DISABLE_AUTH) {
-      setCurrentUser(AUTH_DISABLED_USER);
-      setError(null);
       return;
     }
 
-    // Clear tokens and user info from all possible storage keys
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('userInfo');
-    localStorage.removeItem('auth_state'); // Clear auth frontend's storage too
+    try {
+      // Gọi API logout để xóa cookie
+      const url = `${API_BASE_URL}/api/v1/auth/logout`;
+      console.log('🔵 [BILLING API CALL]', {
+        method: 'POST',
+        url: url,
+        timestamp: new Date().toISOString()
+      });
+      
+      await fetch(url, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
     
     // Clear user state
     setCurrentUser(null);
     setError(null);
+    
+    // Redirect to auth frontend
+    window.location.href = `${AUTH_FRONTEND_URL}/login`;
   };
 
   return (

@@ -2,6 +2,7 @@ version: '3.9'
 services:
   mysql:
     image: mysql:8.0
+    container_name: billing-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: evrental
@@ -14,6 +15,7 @@ services:
       retries: 5
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./init-analytics-db.sql:/docker-entrypoint-initdb.d/init-analytics-db.sql:ro
     networks:
       - ev-rental-network
   payment-svc:
@@ -21,33 +23,36 @@ services:
     environment:
       RABBITMQ_URL: amqp://rabbitmq:5672
       PORT: 8082
-      DATABASE_URL: mysql://root:root@evrental-billing-mysql-1:3306/evrental
-      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      DATABASE_URL: mysql://root:root@billing-mysql:3306/evrental
+      # JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       TZ: Asia/Ho_Chi_Minh
       SERVICE_RENTAL_BASE_URL: http://rental-svc:8081
-      VNPAY_TMN_CODE: "6PFBHL5O"
-      VNPAY_HASH_SECRET: "CQDBWABF701OB5Y09HL793ES9JD3VSZX"
+      VNPAY_TMN_CODE: "UPLNB95D"
+      VNPAY_HASH_SECRET: "2WQDEC19CEHN3RXQYLX76NN4LIYQTJIQ"
       VNPAY_PAY_URL: "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
       VNPAY_RETURN_URL: "http://localhost:9080/api/v1/webhooks/vnpay/return"
       VNPAY_IPN_URL: "http://localhost:9080/api/v1/webhooks/vnpay/ipn"
       FRONTEND_SUCCESS_URL: "http://localhost:5173/?payment=done"
+      # ports:
+      #   - "8082:8082"
     depends_on:
       mysql:
         condition: service_healthy
-    # ports:
-    #   - "8082:8082"
+    ports:
+      - "8082:8082"
     networks:
       - ev-rental-network
   analytics-svc:
     build: ./services/analytics-svc
     environment:
       PORT: 8083
-      DATABASE_URL: mysql://root:root@evrental-billing-mysql-1:3306/evrental_analytics
-      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      DATABASE_URL: mysql://root:root@billing-mysql:3306/evrental_analytics
+      # JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       TZ: Asia/Ho_Chi_Minh
       SERVICE_RENTAL_BASE_URL: http://rental-svc:8081
       SERVICE_PAYMENT_BASE_URL: http://payment-svc:8082
       ENABLE_CRON: true
+      WHITEHOUSE_DATABASE_URL: mysql://nifi:nifi123@whitehouse-mysql:3306/whitehouse
     depends_on:
       mysql:
         condition: service_healthy

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { hasAdminAccess } from '../utils/auth';
 
 const Header = () => {
   const [elevated, setElevated] = useState(false);
@@ -27,8 +28,15 @@ const Header = () => {
   }, []);
 
   const handleLogin = () => {
-    // Redirect to auth service login page
-    window.location.href = 'http://localhost:3002/login';
+    // Redirect to auth frontend (Docker port 8060)
+    const returnUrl = encodeURIComponent(window.location.origin + '/auth/callback');
+    window.location.href = `http://localhost:8060/login?returnUrl=${returnUrl}`;
+  };
+
+  const handleRegister = () => {
+    // Redirect to auth frontend register page
+    const returnUrl = encodeURIComponent(window.location.origin + '/auth/callback');
+    window.location.href = `http://localhost:8060/register?returnUrl=${returnUrl}`;
   };
 
   const getRoleBadgeColor = (role) => {
@@ -65,10 +73,12 @@ const Header = () => {
           <span className="font-bold">Thuexe</span>
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm">
-          <NavLink to="/" className={({ isActive }) => isActive ? 'active-link px-2 py-1' : 'px-2 py-1'}>Home</NavLink>
-          <NavLink to="/listing" className={({ isActive }) => isActive ? 'active-link px-2 py-1' : 'px-2 py-1'}>Listing</NavLink>
-          <NavLink to="/my-bookings" className={({ isActive }) => isActive ? 'active-link px-2 py-1' : 'px-2 py-1'}>My bookings</NavLink>
-          <NavLink to="/contact" className={({ isActive }) => isActive ? 'active-link px-2 py-1' : 'px-2 py-1'}>Contact</NavLink>
+          <NavLink to="/" className={({ isActive }) => isActive ? 'active-link px-2 py-1' : 'px-2 py-1'}>Trang chủ</NavLink>
+          <NavLink to="/listing" className={({ isActive }) => isActive ? 'active-link px-2 py-1' : 'px-2 py-1'}>Danh sách xe</NavLink>
+          <NavLink to="/my-bookings" className={({ isActive }) => isActive ? 'active-link px-2 py-1' : 'px-2 py-1'}>Đơn hàng của tôi</NavLink>
+          {currentUser && hasAdminAccess(currentUser) && (
+            <NavLink to="/admin" className={({ isActive }) => isActive ? 'active-link px-2 py-1' : 'px-2 py-1'}>Quản trị</NavLink>
+          )}
         </nav>
         <div className="flex items-center gap-3">
           {isAuthenticated && currentUser ? (
@@ -79,11 +89,11 @@ const Header = () => {
               >
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                    {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
+                    {(currentUser.fullName || currentUser.name || 'U').charAt(0).toUpperCase()}
                   </div>
                   <div className="hidden sm:flex flex-col items-start">
                     <span className="text-sm font-semibold text-gray-900">
-                      {currentUser.fullName || 'User'}
+                      {currentUser.fullName || currentUser.name || 'User'}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(currentUser.role)}`}>
                       {getRoleDisplayName(currentUser.role)}
@@ -98,8 +108,8 @@ const Header = () => {
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
                   <div className="px-4 py-3 border-b border-gray-200">
-                    <p className="text-sm font-semibold text-gray-900">{currentUser.fullName || 'User'}</p>
-                    <p className="text-xs text-gray-500 mt-1">ID: {currentUser.id}</p>
+                    <p className="text-sm font-semibold text-gray-900">{currentUser.fullName || currentUser.name || 'User'}</p>
+                    <p className="text-xs text-gray-500 mt-1">Email: {currentUser.email || 'N/A'}</p>
                     <span className={`inline-block text-xs px-2 py-1 rounded-full mt-2 ${getRoleBadgeColor(currentUser.role)}`}>
                       {getRoleDisplayName(currentUser.role)}
                     </span>
@@ -121,8 +131,8 @@ const Header = () => {
               <button onClick={handleLogin} className="btn-outline hidden sm:inline-flex">
                 Đăng nhập
               </button>
-              <button onClick={handleLogin} className="btn-soild">
-                Bắt đầu
+              <button onClick={handleRegister} className="btn-soild">
+                Đăng ký
               </button>
             </>
           )}

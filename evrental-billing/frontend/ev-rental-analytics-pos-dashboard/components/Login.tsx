@@ -1,24 +1,24 @@
-import React, { useContext, useState } from 'react';
-import { AuthContext } from '../contexts/AuthContext';
+import React, { useEffect } from 'react';
 import Card from './ui/Card';
 import Button from './ui/Button';
-import Input from './ui/Input';
+
+const AUTH_FRONTEND_URL = 'http://localhost:8060'; // Auth UI (Docker)
 
 const Login: React.FC = () => {
-  const { login, isLoading, error } = useContext(AuthContext);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) return;
-    
-    try {
-      await login(email, password);
-    } catch (error) {
-      // Error is handled by AuthContext
-    }
+  // Redirect đến centralized auth frontend để đăng nhập (SSO)
+  const handleRedirectToLogin = () => {
+    const returnUrl = encodeURIComponent(window.location.href);
+    window.location.href = `${AUTH_FRONTEND_URL}/login?returnUrl=${returnUrl}`;
   };
+
+  // Tự động redirect sau 2 giây
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleRedirectToLogin();
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -29,42 +29,18 @@ const Login: React.FC = () => {
             </svg>
         </div>
         <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">Welcome to EV-Rental</h2>
-        <p className="text-gray-500 mb-6 text-center">Please sign in to your account.</p>
+        <p className="text-gray-500 mb-6 text-center">Đang chuyển đến trang đăng nhập...</p>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Email"
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-            required
-          />
-          <Input
-            label="Password"
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
-            required
-          />
-          
-          {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-              {error}
-            </div>
-          )}
-          
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isLoading || !email || !password}
-          >
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </Button>
-        </form>
+        <div className="flex items-center justify-center mb-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+        
+        <Button 
+          onClick={handleRedirectToLogin}
+          className="w-full"
+        >
+          Đăng nhập ngay
+        </Button>
       </Card>
     </div>
   );

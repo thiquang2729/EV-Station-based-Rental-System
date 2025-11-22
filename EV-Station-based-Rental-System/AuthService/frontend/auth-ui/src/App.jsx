@@ -41,7 +41,7 @@ const App = () => {
 
   const getDefaultRedirect = () => {
     if (!user) return "/login";
-    return isAdmin ? "/admin" : "/home";
+    return isAdmin ? "/admin/default" : "/home";
   };
 
   const defaultRedirect = getDefaultRedirect();

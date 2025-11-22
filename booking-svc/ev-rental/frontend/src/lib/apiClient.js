@@ -1,22 +1,15 @@
 /**
- * API client with automatic JWT token injection
+ * API client with automatic cookie-based authentication (SSO)
  */
 export async function api(path, { method = 'GET', body, headers } = {}) {
-  // Lấy access token từ localStorage
-  const accessToken = localStorage.getItem('accessToken');
-  
   const opts = {
     method,
+    credentials: 'include', // Quan trọng: gửi cookie để SSO hoạt động
     headers: {
       'Content-Type': 'application/json',
       ...(headers || {}),
     },
   };
-  
-  // Tự động thêm Authorization header nếu có token
-  if (accessToken && !opts.headers['Authorization']) {
-    opts.headers['Authorization'] = `Bearer ${accessToken}`;
-  }
   
   if (body !== undefined) opts.body = JSON.stringify(body);
 

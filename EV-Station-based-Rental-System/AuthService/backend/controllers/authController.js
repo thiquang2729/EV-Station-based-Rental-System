@@ -12,10 +12,13 @@ const JWT_ISSUER = process.env.JWT_ISSUER || "auth-service";
 const JWT_AUDIENCE = process.env.JWT_AUDIENCE;
 const ACCESS_TOKEN_TTL = process.env.JWT_ACCESS_TTL || "1h";
 const REFRESH_TOKEN_TTL = process.env.JWT_REFRESH_TTL || "365d";
+
+// Cookie options for SSO - share cookies across all ports on localhost
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: isProduction,
   path: "/",
+  domain: isProduction ? process.env.COOKIE_DOMAIN : "localhost", // Share cookie across all localhost ports
   sameSite: isProduction ? "none" : "lax",
 };
 
@@ -186,7 +189,10 @@ const authController = {
       const refreshToken = authController.generateRefreshToken(user);
       await UserRepository.updateRefreshToken(user.id, refreshToken);
 
+      // Set both tokens as HTTP-only cookies for SSO
+      res.cookie("accessToken", accessToken, COOKIE_OPTIONS);
       res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
+      
       return sendSuccess(res, {
         message: MESSAGES.LOGIN_SUCCESS,
         data: {
@@ -237,7 +243,11 @@ const authController = {
         const newAccessToken = authController.generateAccessToken(user);
         const newRefreshToken = authController.generateRefreshToken(user);
         await UserRepository.updateRefreshToken(user.id, newRefreshToken);
+        
+        // Set both tokens as HTTP-only cookies for SSO
+        res.cookie("accessToken", newAccessToken, COOKIE_OPTIONS);
         res.cookie("refreshToken", newRefreshToken, COOKIE_OPTIONS);
+        
         return sendSuccess(res, {
           message: MESSAGES.REFRESH_SUCCESS,
           data: {
@@ -272,7 +282,10 @@ const authController = {
         await UserRepository.clearRefreshToken(userId);
       }
 
+      // Clear both tokens from cookies
+      res.clearCookie("accessToken", COOKIE_OPTIONS);
       res.clearCookie("refreshToken", COOKIE_OPTIONS);
+      
       return sendSuccess(res, {
         message: MESSAGES.LOGOUT_SUCCESS,
         data: null,
@@ -281,6 +294,43 @@ const authController = {
       console.error("logOut error", error);
       return sendError(res, {
         message: MESSAGES.LOGOUT_FAILURE,
+      });
+    }
+  },
+
+  // Get current user from cookie (for SSO)
+  getCurrentUser: async (req, res) => {
+    try {
+      // req.user is populated by verifyToken middleware
+      if (!req.user || !req.user.id) {
+        return sendError(res, {
+          status: 401,
+          message: MESSAGES.UNAUTHENTICATED,
+          code: "UNAUTHORIZED",
+        });
+      }
+
+      // Fetch full user info from database
+      const user = await UserRepository.findById(req.user.id);
+      
+      if (!user) {
+        return sendError(res, {
+          status: 404,
+          message: "User not found.",
+          code: "NOT_FOUND",
+        });
+      }
+
+      return sendSuccess(res, {
+        message: "User retrieved successfully.",
+        data: {
+          user: formatUserResponse(user),
+        },
+      });
+    } catch (error) {
+      console.error("getCurrentUser error", error);
+      return sendError(res, {
+        message: "Failed to get current user.",
       });
     }
   },

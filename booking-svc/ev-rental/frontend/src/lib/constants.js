@@ -6,7 +6,7 @@ export const FLEET_BASE = `${API_GATEWAY}/fleet/api/v1`;
 export const ADMIN_BASE = `${API_GATEWAY}/admin`;
 
 // Direct localhost service URLs
-export const RENTAL_DIRECT = 'http://localhost:3002/api/v1';
-export const FLEET_DIRECT = 'http://localhost:3003/api/v1';
-export const ADMIN_DIRECT = 'http://localhost:3001';
+export const RENTAL_DIRECT = 'http://localhost:9080/api/v1';
+export const FLEET_DIRECT = 'http://localhost:9080/api/v1';
+export const ADMIN_DIRECT = 'http://localhost:9080';
 

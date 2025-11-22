@@ -3,6 +3,7 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import prom from 'prom-client';
+import cookieParser from 'cookie-parser';
 
 const dotenvResult = dotenv.config();
 if (dotenvResult.parsed) {
@@ -27,7 +28,8 @@ prom.collectDefaultMetrics();
 const app = express();
 app.set('trust proxy', true);
 app.use(helmet());
-app.use(cors());
+app.use(cors({ credentials: true, origin: true })); // Cho phép cookie
+app.use(cookieParser()); // Parse cookie
 app.use(express.json());
 
 app.get('/api/v1/health', (req, res) => {

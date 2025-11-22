@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Card from './ui/Card';
 import Button from './ui/Button';
 import { Booking } from '../types';
@@ -8,24 +8,68 @@ interface PaymentSuccessProps {
   setCurrentPage: (page: Page) => void;
 }
 
-// Re-using the same mock data for consistency in the demo
-const mockBooking: Booking = {
+// Helper function để lấy query params từ URL
+function getQueryParam(name: string): string | null {
+  try {
+    const url = new URL(window.location.href);
+    return url.searchParams.get(name);
+  } catch {
+    return null;
+  }
+}
+
+// Fallback mock data nếu không có thông tin từ URL
+const defaultMockBooking: Booking = {
   id: 'bk_xyz789',
   renterId: 'rent_123',
-  carModel: 'Vinfast VF e34',
-  carImageUrl: 'https://img1.oto.com.vn/2021/03/25/32g1b7Sg/vf-e34-mau-trang-d10e.jpg',
-  pickupStation: 'S001 - Vincom Center',
-  dropoffStation: 'S001 - Vincom Center',
-  pickupTime: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
-  dropoffTime: new Date(Date.now() + 86400000 * 3).toISOString(), // 2 days after tomorrow
+  carModel: 'EV Rental',
+  carImageUrl: 'https://via.placeholder.com/600x320?text=EV+Rental',
+  pickupStation: 'S001',
+  dropoffStation: 'S001',
+  pickupTime: new Date().toISOString(),
+  dropoffTime: new Date(Date.now() + 86400000).toISOString(),
   priceDetails: {
-    rentalFee: 1200000,
-    insurance: 150000,
-    total: 1350000,
+    rentalFee: 0,
+    insurance: 0,
+    total: 0,
   },
 };
 
 const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ setCurrentPage }) => {
+  const [booking, setBooking] = useState<Booking>(defaultMockBooking);
+  const [paymentId, setPaymentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Lấy thông tin từ URL params
+    const bookingId = getQueryParam('bookingId');
+    const amount = getQueryParam('amount');
+    const pid = getQueryParam('paymentId');
+    
+    if (pid) {
+      setPaymentId(pid);
+    }
+
+    // Tạo booking object từ URL params
+    if (bookingId) {
+      const bookingData: Booking = {
+        id: bookingId,
+        renterId: getQueryParam('renterId') || 'rent_123',
+        carModel: getQueryParam('carModel') || 'EV Rental',
+        carImageUrl: 'https://via.placeholder.com/600x320?text=EV+Rental',
+        pickupStation: getQueryParam('pickupStation') || 'S001',
+        dropoffStation: getQueryParam('dropoffStation') || 'S001',
+        pickupTime: getQueryParam('pickupTime') || new Date().toISOString(),
+        dropoffTime: getQueryParam('dropoffTime') || new Date(Date.now() + 86400000).toISOString(),
+        priceDetails: {
+          rentalFee: amount ? Number(amount) : 0,
+          insurance: 0,
+          total: amount ? Number(amount) : 0,
+        },
+      };
+      setBooking(bookingData);
+    }
+  }, []);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('vi-VN', {
       year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -46,20 +90,26 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ setCurrentPage }) => {
         <div className="text-left border-t border-b my-6 py-6 space-y-4">
             <h3 className="text-xl font-semibold text-gray-800">Booking Summary</h3>
             <div>
-              <img src={mockBooking.carImageUrl} alt={mockBooking.carModel} className="w-full h-48 object-cover rounded-lg shadow-md mb-3" />
-              <h4 className="text-lg font-bold">{mockBooking.carModel}</h4>
+              <img src={booking.carImageUrl} alt={booking.carModel} className="w-full h-48 object-cover rounded-lg shadow-md mb-3" />
+              <h4 className="text-lg font-bold">{booking.carModel}</h4>
             </div>
              <div className="text-sm space-y-2">
-                <p><span className="font-semibold">Booking ID:</span> {mockBooking.id}</p>
-                <p><span className="font-semibold">Pickup:</span> {mockBooking.pickupStation} at {formatDate(mockBooking.pickupTime)}</p>
-                <p><span className="font-semibold">Drop-off:</span> {mockBooking.dropoffStation} at {formatDate(mockBooking.dropoffTime)}</p>
-                <p className="font-bold pt-2 border-t mt-2"><span className="font-semibold">Total Paid:</span> {mockBooking.priceDetails.total.toLocaleString('vi-VN')} VND</p>
+                <p><span className="font-semibold">Booking ID:</span> {booking.id}</p>
+                {paymentId && <p><span className="font-semibold">Payment ID:</span> {paymentId}</p>}
+                <p><span className="font-semibold">Pickup:</span> {booking.pickupStation} at {formatDate(booking.pickupTime)}</p>
+                <p><span className="font-semibold">Drop-off:</span> {booking.dropoffStation} at {formatDate(booking.dropoffTime)}</p>
+                <p className="font-bold pt-2 border-t mt-2"><span className="font-semibold">Total Paid:</span> {booking.priceDetails.total.toLocaleString('vi-VN')} VND</p>
              </div>
         </div>
         
-        <Button onClick={() => { window.location.href = 'http://localhost:8060/home'; }}>
-          Trở về trang chính
-        </Button>
+        <div className="space-y-3">
+          <Button onClick={() => { window.location.href = 'http://localhost:8060/home'; }} className="w-full">
+            Trở về trang chính
+          </Button>
+          <Button onClick={() => setCurrentPage('BOOKING')} className="w-full bg-gray-600 hover:bg-gray-700">
+            Xem lại đơn đặt
+          </Button>
+        </div>
       </Card>
     </div>
   );

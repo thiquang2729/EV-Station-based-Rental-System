@@ -634,6 +634,68 @@ curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/payments-intents \
     "desc": "Create payment intent - auth required"
   }'
 
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/payments-public \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/payments/api/v1/public/*",
+    "methods": ["GET", "POST"],
+    "upstream": {
+      "nodes": {
+        "payment-svc:8082": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugins": {
+      "proxy-rewrite": {
+        "regex_uri": ["^/payments/api/v1/public(.*)$", "/api/v1/public$1"]
+      }
+    },
+    "desc": "Public payment endpoints - no auth required (GET, POST)"
+  }'
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/payments-list \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/api/v1/payments",
+    "methods": ["GET"],
+    "upstream": {
+      "nodes": {
+        "payment-svc:8082": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugin_config_id": "auth-verify",
+    "plugins": {
+      "proxy-rewrite": {
+        "uri": "/api/v1/payments"
+      }
+    },
+    "desc": "List payments - auth required, supports query params: stationId, status, limit, offset"
+  }'
+
+curl -X PUT http://127.0.0.1:9180/apisix/admin/routes/payments-pos-collect \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "uri": "/api/v1/pos/*",
+    "methods": ["GET", "POST"],
+    "upstream": {
+      "nodes": {
+        "payment-svc:8082": 1
+      },
+      "type": "roundrobin"
+    },
+    "plugin_config_id": "auth-verify",
+    "plugins": {
+      "proxy-rewrite": {
+        "regex_uri": ["^/api/v1/pos/(.*)$", "/api/v1/pos/$1"]
+      }
+    },
+    "desc": "POS endpoints - auth required (GET, POST), supports /collect and /:paymentId/confirm"
+  }'
+
 
 ================================================================================
 PHẦN 5: SCRIPT TỰ ĐỘNG HÓA CẤU HÌNH
@@ -1005,15 +1067,15 @@ LƯU Ý QUAN TRỌNG:
     - Upstream: http://rental-svc:4000/api/v1/stations
     - Mô tả: Lấy danh sách stations
     
-    GET    /rental/api/v1/stations/:id
+    GET    /api/v1/stations/:id
     - Authentication: KHÔNG CẦN
-    - Upstream: http://rental-svc:4000/api/v1/stations/:id
+    - Upstream: http://rental-svc:3002/api/v1/stations/:id
     - Mô tả: Lấy station theo ID
     
-    POST   /rental/api/v1/stations
+    POST   /api/v1/stations
     - Authentication: CẦN (Bearer Token) - Recommended
-    - Upstream: http://rental-svc:4000/api/v1/stations
-    - Mô tả: Tạo station mới
+    - Upstream: http://rental-svc:3002/api/v1/stations
+    - Mô tả: Tạo station mới=========================
     
     PUT    /rental/api/v1/stations/:id
     - Authentication: CẦN (Bearer Token) - Recommended
@@ -1030,7 +1092,7 @@ LƯU Ý QUAN TRỌNG:
     - Role Required: RENTER, STAFF, hoặc ADMIN
     - Upstream: http://rental-svc:4000/api/v1/vehicles
     - Query params: stationId, available
-    - Mô tả: Lấy danh sách vehicles (cho rental)
+    - Mô tả: Lấy danh sách vehicles (cho rental)=================
     
     GET    /rental/api/v1/vehicles/:id
     - Authentication: CẦN (Bearer Token)
@@ -1040,24 +1102,24 @@ LƯU Ý QUAN TRỌNG:
 
     GET    /rental/api/v1/bookings
     - Authentication: KHÔNG CẦN (có thể thêm sau)
-    - Upstream: http://rental-svc:4000/api/v1/bookings
+    - Upstream: http://rental-svc:3002/api/v1/bookings
     - Mô tả: Lấy danh sách bookings
     
     POST   /rental/api/v1/bookings
     - Authentication: CẦN (Bearer Token) - Recommended
-    - Upstream: http://rental-svc:4000/api/v1/bookings
+    - Upstream: http://rental-svc:3002/api/v1/bookings
     - Body: { vehicleId, stationId, userId, startTime, estDurationH }
     - Mô tả: Tạo booking mới
     
     POST   /rental/api/v1/bookings/:id/mark-paid
     - Authentication: CẦN (Bearer Token) - Recommended
-    - Upstream: http://rental-svc:4000/api/v1/bookings/:id/mark-paid
+    - Upstream: http://rental-svc:3002/api/v1/bookings/:id/mark-paid
     - Body: { paymentId }
     - Mô tả: Đánh dấu booking đã thanh toán
     
-    PATCH  /rental/api/v1/bookings/:id/return
+    PATCH  /api/v1/bookings/:id/return
     - Authentication: CẦN (Bearer Token) - Recommended
-    - Upstream: http://rental-svc:4000/api/v1/bookings/:id/return
+    - Upstream: http://rental-svc:3002/api/v1/bookings/:id/return
     - Mô tả: Trả xe
 
 2.2. FLEET SERVICE (Port: 3003 hoặc 4000)
@@ -1095,9 +1157,9 @@ LƯU Ý QUAN TRỌNG:
     - Upstream: http://fleet-svc:4000/api/v1/vehicles/:key
     - Mô tả: Xóa vehicle (có thể dùng id hoặc plate)
 
-    GET    /fleet/api/v1/incidents
+    GET    /api/v1/incidents
     - Authentication: CẦN (Bearer Token) - Recommended
-    - Upstream: http://fleet-svc:4000/api/v1/incidents
+    - Upstream: http://fleet-svc:3003/api/v1/incidents
     - Mô tả: Lấy danh sách incidents
     
     POST   /fleet/api/v1/incidents
@@ -1109,11 +1171,11 @@ LƯU Ý QUAN TRỌNG:
     GET    /fleet/api/v1/overview
     - Authentication: CẦN (Bearer Token) - Recommended
     - Upstream: http://fleet-svc:4000/api/v1/overview
-    - Mô tả: Tổng quan đội xe
+    - Mô tả: Tổng quan đội xe===========
 
     POST   /fleet/api/v1/uploads/presign
     - Authentication: CẦN (Bearer Token) - Recommended
-    - Upstream: http://fleet-svc:4000/api/v1/uploads/presign
+    - Upstream: http://fleet-svc:3003/api/v1/uploads/presign
     - Body: { contentType, fileName, prefix }
     - Mô tả: Tạo presigned URL để upload ảnh
 

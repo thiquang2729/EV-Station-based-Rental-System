@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getFleetVehicle } from '../api/fleet';
-import { createBooking, getStation } from '../api/rental';
+import { createBooking, getStation, listStations } from '../api/rental';
 
 function formatPricePerDay(vnd) {
   if (vnd === null || vnd === undefined) return '-';
@@ -19,11 +19,12 @@ export default function CarDetails() {
   });
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [stationLabel, setStationLabel] = useState('');
+  const [stations, setStations] = useState([]);
   const [bookingForm, setBookingForm] = useState({
     name: '',
     phone: '',
     email: '',
-    pickupLocation: '',
+    stationId: '',
     note: '',
     paymentMethod: 'payment',
     acceptPayment: true,
@@ -44,6 +45,21 @@ export default function CarDetails() {
   }, [id]);
 
   const { item, loading, error, start, end, submitting, submitMsg } = state;
+
+  // Load list of stations
+  useEffect(() => {
+    let mounted = true;
+    listStations()
+      .then((res) => {
+        if (!mounted) return;
+        const data = res?.data ?? res;
+        setStations(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error('Failed to load stations:', err);
+      });
+    return () => { mounted = false; };
+  }, []);
 
   useEffect(() => {
     if (item?.stationName) {
@@ -68,14 +84,14 @@ export default function CarDetails() {
   }, [item?.stationId, item?.stationName]);
 
   useEffect(() => {
-    const defaultPickup = stationLabel || (item?.stationId ? `Trạm ${item.stationId}` : '');
-    if (defaultPickup && bookingForm.pickupLocation !== defaultPickup) {
-      setBookingForm((prev) => ({ ...prev, pickupLocation: defaultPickup }));
+    // Set default station to vehicle's station when form is empty
+    if (item?.stationId && !bookingForm.stationId) {
+      setBookingForm((prev) => ({ ...prev, stationId: item.stationId }));
     }
-  }, [stationLabel, item?.stationId, bookingForm.pickupLocation]);
-  if (loading) return <div className="max-padd-container py-10">Dang tai...</div>;
+  }, [item?.stationId]);
+  if (loading) return <div className="max-padd-container py-10">Đang tải...</div>;
   if (error) return <div className="max-padd-container py-10 text-red-600">{error}</div>;
-  if (!item) return <div className="max-padd-container py-10">Khong tim thay xe.</div>;
+  if (!item) return <div className="max-padd-container py-10">Không tìm thấy xe.</div>;
 
   const desc = item.description || item.desc || item.details || '';
   const pricePerDay = Number(item.pricePerDay || 0); // giá lưu theo ngày
@@ -100,8 +116,8 @@ export default function CarDetails() {
   const onBook = async () => {
     setState((st) => ({ ...st, submitting: true, submitMsg: '' }));
     try {
-      if (!item?.id) throw new Error('Thieu thong tin xe');
-      if (!(endMid > startMid)) throw new Error('Thoi gian ket thuc phai sau thoi gian bat dau');
+      if (!item?.id) throw new Error('Thiếu thông tin xe');
+      if (!(endMid > startMid)) throw new Error('Thời gian kết thúc phải sau thời gian bắt đầu');
       const payload = {
         vehicleId: String(item.id),
         startTime: new Date(startMid).toISOString(),
@@ -126,12 +142,12 @@ export default function CarDetails() {
       setState((st) => ({
         ...st,
         item: st.item ? { ...st.item, isAvailable: false } : st.item,
-        submitMsg: `Dat xe thanh cong. Ma booking: ${data?.id || 'N/A'}. Uoc tinh: ${estPrice.toLocaleString('vi-VN')} đ`,
+        submitMsg: `Đặt xe thành công. Mã booking: ${data?.id || 'N/A'}. Ước tính: ${estPrice.toLocaleString('vi-VN')} đ`,
         submitting: false,
       }));
       return true;
     } catch (e) {
-      setState((st) => ({ ...st, submitMsg: (e && e.message) || 'Dat xe that bai', submitting: false }));
+      setState((st) => ({ ...st, submitMsg: (e && e.message) || 'Đặt xe thất bại', submitting: false }));
       return false;
     }
   };
@@ -148,44 +164,44 @@ export default function CarDetails() {
 
   return (
     <div className="max-padd-container py-10">
-      <button className="mb-6 btn-outline" onClick={() => navigate(-1)}> Quay lai</button>
+      <button className="mb-6 btn-outline" onClick={() => navigate(-1)}> Quay lại</button>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="rounded-xl border bg-white p-4 flex items-center justify-center min-h-[280px]">
           {item.imageUrl ? (
             <img src={item.imageUrl} alt={item.name || item.id} className="max-h-[420px] w-full object-contain" />
           ) : (
-            <div className="text-gray-400">Khong co anh</div>
+            <div className="text-gray-400">Không có ảnh</div>
           )}
         </div>
 
         <div className="rounded-xl border bg-white p-4">
           <h3 className="mb-2">{item.name || item.id}</h3>
-          <div className="text-sm text-gray-600 capitalize mb-2">Loai: {item.type || 'Khong ro'}</div>
+          <div className="text-sm text-gray-600 capitalize mb-2">Loại: {item.type || 'Không rõ'}</div>
           <div className="mb-2 flex items-center gap-2">
             <span className={`inline-block w-2 h-2 rounded-full ${item.isAvailable ? 'bg-emerald-500' : 'bg-gray-300'}`} />
-            <span className="text-sm">Trang thai: {item.isAvailable ? 'San sang' : 'Khong san sang'}</span>
+            <span className="text-sm">Trạng thái: {item.isAvailable ? 'Sẵn sàng' : 'Không sẵn sàng'}</span>
           </div>
           <div className="mb-4 font-semibold">Giá thuê: {formatPricePerDay(pricePerDay)}</div>
           <div>
             <div className="font-semibold mb-1">Mô tả</div>
-            <div className="text-sm text-gray-700 whitespace-pre-line">{desc?.trim() || 'Khong co mo ta'}</div>
+            <div className="text-sm text-gray-700 whitespace-pre-line">{desc?.trim() || 'Không có mô tả'}</div>
           </div>
           <div className="h-px bg-gray-200 my-4" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <label className="text-sm">Bat dau
+            <label className="text-sm">Bắt đầu
               <input type="date" className="border p-2 rounded w-full"
                 value={toDateValue(start)}
                 onChange={(e) => { const d = new Date(e.target.value); if (!isNaN(d)) { d.setHours(0, 0, 0, 0); setState((st) => ({ ...st, start: d })); } }} />
             </label>
-            <label className="text-sm">Ket thuc
+            <label className="text-sm">Kết thúc
               <input type="date" className="border p-2 rounded w-full"
                 value={toDateValue(end)}
                 onChange={(e) => { const d = new Date(e.target.value); if (!isNaN(d)) { d.setHours(0, 0, 0, 0); setState((st) => ({ ...st, end: d })); } }} />
             </label>
           </div>
-          <div className="mt-3 text-sm text-gray-700">Thoi luong uoc tinh: <span className="font-semibold">{estDays} ngay</span></div>
-          <div className="mt-1 text-sm">Tam tinh: <span className="font-semibold">{estPrice.toLocaleString('vi-VN')} đ</span></div>
+          <div className="mt-3 text-sm text-gray-700">Thời lượng ước tính: <span className="font-semibold">{estDays} ngày</span></div>
+          <div className="mt-1 text-sm">Tạm tính: <span className="font-semibold">{estPrice.toLocaleString('vi-VN')} đ</span></div>
           <div className="mt-4">
             <button
               type="button"
@@ -210,6 +226,7 @@ export default function CarDetails() {
           setBookingForm={setBookingForm}
           submitting={submitting}
           submitMsg={submitMsg}
+          stations={stations}
           onClose={() => !submitting && setShowBookingModal(false)}
           onSubmit={handleModalSubmit}
         />
@@ -228,6 +245,7 @@ function BookingModal({
   setBookingForm,
   submitting,
   submitMsg,
+  stations,
   onClose,
   onSubmit,
 }) {
@@ -247,7 +265,8 @@ function BookingModal({
   };
 
   const totalDue = Math.max(0, estPrice);
-  const summaryLocation = bookingForm.pickupLocation || 'Chọn địa điểm nhận xe';
+  const selectedStation = stations.find((s) => String(s.id) === String(bookingForm.stationId));
+  const summaryLocation = selectedStation ? selectedStation.name : 'Chọn trạm nhận xe';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">
@@ -303,13 +322,20 @@ function BookingModal({
 
             <label className="text-sm font-medium">
               Nơi nhận xe*
-              <input
+              <select
                 required
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 bg-gray-100 text-gray-600"
-                value={bookingForm.pickupLocation}
-                readOnly
-              />
-              <span className="mt-1 block text-xs text-gray-500">Địa điểm cố định theo trạm đã đăng ký.</span>
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2"
+                value={bookingForm.stationId}
+                onChange={(e) => updateField('stationId', e.target.value)}
+              >
+                <option value="">Chọn trạm nhận xe</option>
+                {stations.map((station) => (
+                  <option key={station.id} value={station.id}>
+                    {station.name} {station.address ? `- ${station.address}` : ''}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1 block text-xs text-gray-500">Chọn trạm bạn muốn nhận xe.</span>
             </label>
 
             <label className="text-sm font-medium">
@@ -390,7 +416,7 @@ function BookingModal({
                 {item?.imageUrl ? (
                   <img src={item.imageUrl} alt={item?.name || item?.id} className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">No image</div>
+                  <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">Không có ảnh</div>
                 )}
               </div>
               <div className="flex-1">

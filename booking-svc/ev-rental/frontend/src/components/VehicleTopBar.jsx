@@ -5,7 +5,7 @@ import { listFleetVehicles } from '../api/fleet';
 const availabilityBadge = (v) => (
   <span
     className={`ml-2 inline-block w-2 h-2 rounded-full ${v.isAvailable ? 'bg-emerald-500' : 'bg-gray-300'}`}
-    title={v.isAvailable ? 'Available' : 'Unavailable'}
+    title={v.isAvailable ? 'Sẵn sàng' : 'Không sẵn sàng'}
   />
 );
 

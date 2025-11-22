@@ -13,6 +13,9 @@ router.post("/login", authController.loginUser);
 //LOG OUT
 router.post("/logout", authController.logOut);
 
+// GET CURRENT USER (for SSO - reads from cookie)
+router.get("/me", verifyToken, authController.getCurrentUser);
+
 // INTROSPECT (for API Gateway auth_request)
 router.get("/introspect", verifyToken, (req, res) => {
   return res.json({

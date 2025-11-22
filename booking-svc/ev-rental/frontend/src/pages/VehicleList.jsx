@@ -23,8 +23,8 @@ export default function VehicleList() {
 
   return (
     <div className="max-padd-container py-10">
-      <h3 className="mb-6">Vehicles</h3>
-      {loading && <div>Loading vehicles...</div>}
+      <h3 className="mb-6">Danh sách xe</h3>
+      {loading && <div>Đang tải danh sách xe...</div>}
       {error && <div className="text-red-600">{error}</div>}
       {!loading && !error && (
         items.length ? (
@@ -35,7 +35,7 @@ export default function VehicleList() {
                   {v.imageUrl ? (
                     <img src={v.imageUrl} alt={v.name || v.id} className="w-full h-full object-contain" />
                   ) : (
-                    <div className="text-gray-300">No image</div>
+                    <div className="text-gray-300">Không có ảnh</div>
                   )}
                 </div>
                 <div className="p-4">
@@ -43,22 +43,22 @@ export default function VehicleList() {
                     <div className="text-base font-semibold truncate mr-2">{v.name || v.id}</div>
                     <span
                       className={`inline-block w-2 h-2 rounded-full ${v.isAvailable ? 'bg-emerald-500' : 'bg-gray-300'}`}
-                      title={v.isAvailable ? 'Available' : 'Unavailable'}
+                      title={v.isAvailable ? 'Sẵn sàng' : 'Không sẵn sàng'}
                     />
                   </div>
-                  <div className="text-sm text-gray-500 mb-2 capitalize">{v.type || 'vehicle'}</div>
+                  <div className="text-sm text-gray-500 mb-2 capitalize">{v.type || 'xe'}</div>
                   {v.pricePerDay !== undefined && (
                     <div className="text-sm font-semibold">{Number(v.pricePerDay || 0).toLocaleString('vi-VN')} đ/ngày</div>
                   )}
                   <div className="mt-3">
-                    <NavLink to={`/vehicles/${encodeURIComponent(v.id)}`} className="btn-outline text-sm">Detail</NavLink>
+                    <NavLink to={`/vehicles/${encodeURIComponent(v.id)}`} className="btn-outline text-sm">Chi tiết</NavLink>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-gray-600">No vehicles found.</div>
+          <div className="text-gray-600">Không tìm thấy xe nào.</div>
         )
       )}
     </div>

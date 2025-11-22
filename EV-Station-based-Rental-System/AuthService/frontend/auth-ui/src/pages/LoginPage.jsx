@@ -71,7 +71,7 @@ const LoginPage = () => {
       const redirectTarget =
         location.state?.from && location.state.reason !== "unauthorized"
           ? location.state.from
-          : "/admin";
+          : "/admin/default";
       navigate(redirectTarget, { replace: true });
       return;
     }

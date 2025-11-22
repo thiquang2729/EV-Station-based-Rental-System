@@ -1,14 +1,16 @@
 generator client {
   provider = "prisma-client-js"
 }
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  relationMode = "prisma"
 }
 
 model Station {
-  id        String   @id @default(cuid())
+  id        String   @id @default(cuid()) // Fallback về cuid nếu code không tạo ID
   name      String
   address   String
   lat       Float
@@ -32,6 +34,8 @@ model Vehicle {
   description   String?
   bookings      Booking[]
   incidents     Incident[]
+
+  @@index([stationId])
 }
 
 model Booking {
@@ -49,9 +53,14 @@ model Booking {
   status        String   @default("PENDING")
   priceEstimate Int?
   priceFinal    Int?
+  paymentId     String?
+  confirmedAt   DateTime?
   createdAt     DateTime @default(now())
 
   handovers     Handover[]
+
+  @@index([stationId])
+  @@index([vehicleId])
 }
 
 
@@ -67,6 +76,8 @@ model Handover {
   odo       Int
   notes     String?
   createdAt DateTime @default(now())
+
+  @@index([bookingId])
 }
 
 model Incident {
@@ -76,7 +87,10 @@ model Incident {
   stationId   String
   reporterId  String
   severity    String
+  status      String   @default("OPEN")
   desc        String
   photos      Json
   createdAt   DateTime @default(now())
+
+  @@index([vehicleId])
 }

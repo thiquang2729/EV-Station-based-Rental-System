@@ -33,3 +33,7 @@ export default app;
 
 // Register cron after app creation
 registerNightlyAggregateJob();
+
+import { initWhitehouseConnection } from './services/whitehouse.service.js';
+initWhitehouseConnection();
+
