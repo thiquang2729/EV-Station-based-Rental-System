@@ -43,6 +43,13 @@ const forecastQuerySchema = {
   })
 };
 
+// Utilization query schema (only stationId, no date range needed for today)
+const utilizationQuerySchema = {
+  query: z.object({
+    stationId: z.string().optional(),
+  })
+};
+
 // Revenue analytics
 r.get('/revenue', 
   requireRole('STAFF', 'ADMIN'), 
@@ -53,11 +60,11 @@ r.get('/revenue',
 
 // NOTE: '/revenue-daily' defined above as public
 
-// Utilization analytics
+// Utilization analytics (peak hours for today)
 r.get('/utilization', 
   requireRole('STAFF', 'ADMIN'), 
   scopeStation, 
-  validate(analyticsQuerySchema), 
+  validate(utilizationQuerySchema), 
   ctrl.getUtilization
 );
 

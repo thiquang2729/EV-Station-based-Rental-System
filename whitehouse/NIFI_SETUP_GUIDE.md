@@ -150,7 +150,7 @@ INSERT INTO fact_booking (
 )
 SELECT 
   sb.booking_id,
-  dt.time_id,
+  COALESCE(dt.time_id, 0) as time_id,  -- Nếu không có dim_time, dùng 0
   sb.user_id,
   sb.station_id,
   sb.vehicle_id,
@@ -166,10 +166,9 @@ SELECT
     ELSE NULL
   END as duration_hours
 FROM staging_booking sb
-INNER JOIN dim_time dt ON DATE(sb.start_time) = dt.date
-WHERE sb.status IN ('CONFIRMED', 'COMPLETED')
+LEFT JOIN dim_time dt ON DATE(sb.start_time) = dt.date  -- LEFT JOIN thay vì INNER JOIN
+WHERE sb.status IS NOT NULL
 ON DUPLICATE KEY UPDATE
-  time_id = VALUES(time_id),
   user_id = VALUES(user_id),
   station_id = VALUES(station_id),
   vehicle_id = VALUES(vehicle_id),
@@ -181,6 +180,11 @@ ON DUPLICATE KEY UPDATE
   payment_id = VALUES(payment_id),
   duration_hours = VALUES(duration_hours)
 ```
+
+**Lưu ý:** 
+- Đã đổi `INNER JOIN` thành `LEFT JOIN` để không bị lỗi khi thiếu `dim_time`
+- Nếu muốn bỏ hoàn toàn `dim_time`, có thể dùng `0 as time_id` và bỏ JOIN
+- Trước khi chạy, cần xóa foreign key constraints (xem script `remove-foreign-keys.sql`)
 
 ### Kết Nối Processors (Real-Time)
 ```
@@ -253,7 +257,7 @@ INSERT INTO fact_payment (
 )
 SELECT 
   sp.payment_id,
-  dt.time_id,
+  COALESCE(dt.time_id, 0) as time_id,  -- Nếu không có dim_time, dùng 0
   sp.user_id,
   sp.station_id,
   sp.booking_id,
@@ -262,10 +266,9 @@ SELECT
   sp.method,
   sp.transaction_id
 FROM staging_payment sp
-INNER JOIN dim_time dt ON DATE(sp.created_at) = dt.date
+LEFT JOIN dim_time dt ON DATE(sp.created_at) = dt.date  -- LEFT JOIN thay vì INNER JOIN
 WHERE sp.status = 'SUCCEEDED'
 ON DUPLICATE KEY UPDATE
-  time_id = VALUES(time_id),
   user_id = VALUES(user_id),
   station_id = VALUES(station_id),
   booking_id = VALUES(booking_id),
@@ -275,15 +278,37 @@ ON DUPLICATE KEY UPDATE
   transaction_id = VALUES(transaction_id)
 ```
 
+**Lưu ý:** 
+- Đã đổi `INNER JOIN` thành `LEFT JOIN` để không bị lỗi khi thiếu `dim_time`
+- Nếu muốn bỏ hoàn toàn `dim_time`, có thể dùng `0 as time_id` và bỏ JOIN
+
 ---
 
 ## Flow 3: Populate Dimension Tables
+
+### Mục Đích
+Tự động sync dữ liệu từ source databases (booking, auth) vào dimension tables trong whitehouse database.
+
+### ⚠️ Lưu Ý Quan Trọng
+
+**Thứ tự chạy:**
+1. **Populate DimTime** trước (nếu chưa có)
+2. **Sync Dimensions** (DimStation, DimUser, DimVehicle) - chạy trước khi load fact tables
+3. Sau đó mới chạy Flow 1 và Flow 2 (Extract Bookings/Payments)
+
+**Cross-Database Queries:**
+- Các SQL statements dưới đây sử dụng cross-database queries
+- Đảm bảo user `nifi` trong whitehouse database có quyền SELECT từ các databases khác
+- Nếu không có quyền, cần grant permissions hoặc dùng cách 2 (QueryDatabaseTable + PutDatabaseRecord)
 
 ### 3.1. Populate DimStation
 
 #### ExecuteSQL
 - **Name**: `SyncDimStation`
-- **Schedule**: `0 0 2 * * ?` (Chạy lúc 2h sáng)
+- **Controller Service**: `WhitehouseDBConnection` ⭐ (QUAN TRỌNG: Phải dùng Whitehouse connection)
+- **Scheduling Strategy**: `Timer driven`
+- **Run Schedule**: `5 min` (Sync mỗi 5 phút) hoặc `0 0 2 * * ?` (Chạy lúc 2h sáng)
+- **SQL Pre-Query**: `SELECT 1`
 - **SQL Statement**:
 ```sql
 INSERT INTO dim_station (station_id, station_name, address, lat, lng)
@@ -293,7 +318,7 @@ SELECT
   s.address,
   s.lat,
   s.lng
-FROM booking-mysql.evrental.Station s
+FROM evrental.Station s
 ON DUPLICATE KEY UPDATE
   station_name = VALUES(station_name),
   address = VALUES(address),
@@ -302,10 +327,18 @@ ON DUPLICATE KEY UPDATE
   updated_at = NOW()
 ```
 
+**Lưu ý:** 
+- Nếu `evrental` database ở MySQL server khác (không cùng với whitehouse), cần dùng cách 2 bên dưới
+- Hoặc grant quyền SELECT cho user `nifi` từ whitehouse database
+
 ### 3.2. Populate DimUser
 
 #### ExecuteSQL
 - **Name**: `SyncDimUser`
+- **Controller Service**: `WhitehouseDBConnection` ⭐
+- **Scheduling Strategy**: `Timer driven`
+- **Run Schedule**: `5 min` (Sync mỗi 5 phút)
+- **SQL Pre-Query**: `SELECT 1`
 - **SQL Statement**:
 ```sql
 INSERT INTO dim_user (user_id, email, full_name, phone_number, role, verification_status)
@@ -316,7 +349,7 @@ SELECT
   u.phoneNumber as phone_number,
   u.role,
   u.verificationStatus as verification_status
-FROM auth-mysql.xdhdt.User u
+FROM xdhdt.User u
 ON DUPLICATE KEY UPDATE
   email = VALUES(email),
   full_name = VALUES(full_name),
@@ -326,10 +359,18 @@ ON DUPLICATE KEY UPDATE
   updated_at = NOW()
 ```
 
+**Lưu ý:**
+- Nếu `xdhdt` database ở MySQL server khác (auth-mysql), cần dùng cách 2 bên dưới
+- Hoặc grant quyền SELECT cho user `nifi` từ whitehouse database
+
 ### 3.3. Populate DimVehicle
 
 #### ExecuteSQL
 - **Name**: `SyncDimVehicle`
+- **Controller Service**: `WhitehouseDBConnection` ⭐
+- **Scheduling Strategy**: `Timer driven`
+- **Run Schedule**: `5 min` (Sync mỗi 5 phút)
+- **SQL Pre-Query**: `SELECT 1`
 - **SQL Statement**:
 ```sql
 INSERT INTO dim_vehicle (vehicle_id, vehicle_name, plate, type, station_id, price_per_day)
@@ -340,7 +381,7 @@ SELECT
   v.type,
   v.stationId as station_id,
   v.pricePerDay as price_per_day
-FROM booking-mysql.evrental.Vehicle v
+FROM evrental.Vehicle v
 ON DUPLICATE KEY UPDATE
   vehicle_name = VALUES(vehicle_name),
   plate = VALUES(plate),
@@ -354,10 +395,103 @@ ON DUPLICATE KEY UPDATE
 
 #### ExecuteSQL
 - **Name**: `PopulateDimTime`
-- **Schedule**: `0 0 0 1 1 ?` (Chạy mỗi năm một lần vào 1/1)
+- **Controller Service**: `WhitehouseDBConnection`
+- **Scheduling Strategy**: `Timer driven` hoặc `CRON driven`
+- **Run Schedule**: `0 0 0 1 1 ?` (Chạy mỗi năm một lần vào 1/1) hoặc chạy 1 lần thủ công
+- **SQL Pre-Query**: `SELECT 1`
 - **SQL Statement**: Gọi stored procedure
 ```sql
 CALL populate_dim_time(2)
+```
+
+### ⚙️ Cấu Hình ExecuteSQL Processors
+
+Tất cả các `ExecuteSQL` processors cần cấu hình:
+
+1. **Database Connection Pooling Service**: `WhitehouseDBConnection`
+2. **SQL Pre-Query**: `SELECT 1` (bắt buộc, không được để trống)
+3. **SQL Query**: (SQL statement ở trên)
+4. **SQL Post-Query**: (để trống)
+5. **Max Wait Time**: `0 seconds`
+6. **Normalize Table/Column Names**: `false`
+7. **Database Session AutoCommit**: `true` (để tự động commit)
+8. **Rollback On Failure**: `false`
+
+### 🔄 Cách 2: Dùng QueryDatabaseTable + PutDatabaseRecord (Nếu Cross-Database Không Hoạt Động)
+
+Nếu cross-database queries không hoạt động (do permissions hoặc databases ở servers khác), dùng cách này:
+
+#### 3.1. Sync DimStation (Cách 2)
+
+1. **QueryDatabaseTable**:
+   - **Name**: `ExtractStations`
+   - **Controller Service**: `BookingDBConnection`
+   - **Table Name**: `Station`
+   - **Columns**: `id, name, address, lat, lng`
+   - **Scheduling**: `Timer driven`, `5 min`
+
+2. **ConvertRecord**:
+   - **Name**: `ConvertStationToJSON`
+   - **Record Reader**: `JsonTreeReader`
+   - **Record Writer**: `JsonRecordSetWriter`
+
+3. **JoltTransformJSON**:
+   - **Name**: `MapStationFields`
+   - **Jolt Spec**:
+   ```json
+   [
+     {
+       "operation": "shift",
+       "spec": {
+         "*": {
+           "id": "[&].station_id",
+           "name": "[&].station_name",
+           "address": "[&].address",
+           "lat": "[&].lat",
+           "lng": "[&].lng"
+         }
+       }
+     }
+   ]
+   ```
+
+4. **PutDatabaseRecord**:
+   - **Name**: `LoadStationsToDim`
+   - **Controller Service**: `WhitehouseDBConnection`
+   - **Table Name**: `dim_station`
+   - **Record Reader**: `JsonTreeReader`
+   - **Statement Type**: `INSERT`
+   - **Translate Field Names**: `false`
+
+Tương tự cho DimUser (dùng `AuthDBConnection`) và DimVehicle (dùng `BookingDBConnection`).
+
+### 📊 Kết Nối Processors
+
+**Flow đơn giản (Cách 1 - ExecuteSQL):**
+```
+GenerateFlowFile (schedule: 5 min) → SyncDimStation
+GenerateFlowFile (schedule: 5 min) → SyncDimUser
+GenerateFlowFile (schedule: 5 min) → SyncDimVehicle
+```
+
+**Hoặc chạy độc lập:**
+- Mỗi processor có thể chạy theo schedule riêng, không cần connection
+
+### ✅ Kiểm Tra Kết Quả
+
+Sau khi chạy, kiểm tra:
+```sql
+-- Kiểm tra số lượng records
+SELECT 'dim_station' as table_name, COUNT(*) as count FROM dim_station
+UNION ALL
+SELECT 'dim_user', COUNT(*) FROM dim_user
+UNION ALL
+SELECT 'dim_vehicle', COUNT(*) FROM dim_vehicle;
+
+-- Kiểm tra records mới nhất
+SELECT * FROM dim_user ORDER BY updated_at DESC LIMIT 5;
+SELECT * FROM dim_station ORDER BY updated_at DESC LIMIT 5;
+SELECT * FROM dim_vehicle ORDER BY updated_at DESC LIMIT 5;
 ```
 
 ---

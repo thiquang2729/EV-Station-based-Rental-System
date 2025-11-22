@@ -1,4 +1,4 @@
-import { RevenueDataPoint, UtilizationDataPoint, StationReport } from '../types';
+import { RevenueDataPoint, UtilizationDataPoint, StationReport, PeakHourDataPoint, RentalHourDataPoint } from '../types';
 
 const API_BASE_URL = 'http://localhost:9080'; // Gateway URL
 
@@ -84,17 +84,14 @@ export const getRevenueDaily = async (
 };
 
 /**
- * Fetches utilization data from the analytics service
+ * Fetches peak hours data (utilization) from the analytics service
+ * Returns booking count by hour for today
  */
 export const getUtilizationData = async (
-  stationId?: string,
-  from?: string,
-  to?: string
-): Promise<UtilizationDataPoint[]> => {
+  stationId?: string
+): Promise<PeakHourDataPoint[]> => {
   const params = new URLSearchParams();
   if (stationId) params.append('stationId', stationId);
-  if (from) params.append('from', from);
-  if (to) params.append('to', to);
 
   const url = `${API_BASE_URL}/api/v1/analytics/utilization?${params}`;
   logApiCall(url, 'GET');
@@ -109,6 +106,31 @@ export const getUtilizationData = async (
 };
 
 /**
+ * Fetches rental hours by date (replaces station reports)
+ * Returns hourly rental data for a specific date
+ */
+export const getRentalHoursByDate = async (
+  date: string,
+  format: 'json' | 'csv' = 'json'
+): Promise<RentalHourDataPoint[]> => {
+  const params = new URLSearchParams();
+  params.append('date', date);
+  params.append('format', format);
+
+  const url = `${API_BASE_URL}/api/v1/reports/stations?${params}`;
+  logApiCall(url, 'GET');
+  const response = await fetch(url, getFetchOptions('GET'));
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch rental hours data');
+  }
+
+  const data = await response.json();
+  return data.data || [];
+};
+
+/**
+ * @deprecated Use getRentalHoursByDate instead
  * Fetches station reports from the analytics service
  */
 export const getStationReports = async (

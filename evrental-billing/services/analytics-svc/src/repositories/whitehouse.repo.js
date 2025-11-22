@@ -1,7 +1,7 @@
 import { getWhitehousePrisma } from '../dao/whitehouse.prisma.js';
 
 /**
- * Get revenue data from whitehouse fact_payment table
+ * Get revenue data from whitehouse fact_booking table
  */
 export async function getRevenueFromWhitehouse(stationId, from, to, granularity = 'day') {
   const fromDate = new Date(from);
@@ -9,37 +9,43 @@ export async function getRevenueFromWhitehouse(stationId, from, to, granularity 
 
   const prisma = await getWhitehousePrisma();
 
-  // Query fact_payment với join dim_time và dim_station
-  const payments = await prisma.factPayment.findMany({
+  // Query fact_booking (không cần join dim_time vì đã xóa foreign keys)
+  const bookings = await prisma.factBooking.findMany({
     where: {
-      status: 'SUCCEEDED',
-      created_at: {
+      start_time: {
         gte: fromDate,
         lte: toDate,
       },
       ...(stationId && { station_id: stationId }),
     },
-    include: {
-      time: true,
-      station: true,
+    select: {
+      start_time: true,
+      price_estimate: true,
     },
     orderBy: {
-      created_at: 'asc',
+      start_time: 'asc',
     },
   });
 
-  // Group by granularity
+  // Group by granularity (tính từ start_time)
   const grouped = {};
-  payments.forEach((payment) => {
+  bookings.forEach((booking) => {
+    const startTime = new Date(booking.start_time);
     let key;
     if (granularity === 'day') {
-      key = payment.time.date.toISOString().split('T')[0];
+      key = startTime.toISOString().split('T')[0];
     } else if (granularity === 'week') {
-      key = `${payment.time.year}-W${String(payment.time.week).padStart(2, '0')}`;
+      // Calculate week number
+      const year = startTime.getFullYear();
+      const oneJan = new Date(year, 0, 1);
+      const week = Math.ceil((((startTime.getTime() - oneJan.getTime()) / 86400000) + oneJan.getDay() + 1) / 7);
+      key = `${year}-W${String(week).padStart(2, '0')}`;
     } else if (granularity === 'month') {
-      key = `${payment.time.year}-${String(payment.time.month).padStart(2, '0')}`;
+      const year = startTime.getFullYear();
+      const month = startTime.getMonth() + 1;
+      key = `${year}-${String(month).padStart(2, '0')}`;
     } else {
-      key = payment.time.date.toISOString().split('T')[0];
+      key = startTime.toISOString().split('T')[0];
     }
 
     if (!grouped[key]) {
@@ -50,7 +56,7 @@ export async function getRevenueFromWhitehouse(stationId, from, to, granularity 
       };
     }
 
-    grouped[key].revenue += Number(payment.amount);
+    grouped[key].revenue += Number(booking.price_estimate) || 0;
     grouped[key].transactionCount += 1;
   });
 

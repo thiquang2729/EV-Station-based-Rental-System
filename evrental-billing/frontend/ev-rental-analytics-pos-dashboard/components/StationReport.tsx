@@ -1,41 +1,60 @@
 
 import React, { useState, useEffect } from 'react';
-import type { StationReport } from '../types';
-import { getStationReports } from '../api/analyticsApi';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import type { RentalHourDataPoint } from '../types';
+import { getRentalHoursByDate } from '../api/analyticsApi';
+import Input from './ui/Input';
 
-const StationReportTable: React.FC = () => {
-  const [reportData, setReportData] = useState<StationReport[]>([]);
+const StationReport: React.FC = () => {
+  const [reportData, setReportData] = useState<RentalHourDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     loadStationReports();
-  }, []);
+  }, [selectedDate]);
 
   const loadStationReports = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Get today's report
-      const today = new Date().toISOString().split('T')[0];
-      const reports = await getStationReports(today);
+      // Get rental hours for selected date
+      const rentalHours = await getRentalHoursByDate(selectedDate);
       
-      setReportData(reports);
+      // Ensure all 24 hours are present, sorted by hour
+      const hourlyData = Array.from({ length: 24 }, (_, i) => {
+        const existing = rentalHours.find(d => d.hour === i);
+        return existing || { hour: i, rentalHours: 0, bookingCount: 0 };
+      });
+      
+      setReportData(hourlyData);
     } catch (error) {
       console.error('Failed to load station reports:', error);
       setError('Failed to load station reports');
       
       // Fallback to mock data
-      setReportData([
-        { stationId: 'S001', date: '2023-10-27', revenue: 4250000, rentals: 55, utilization: 0.82, peakHours: [17, 18, 19] },
-        { stationId: 'S002', date: '2023-10-27', revenue: 3100000, rentals: 42, utilization: 0.75, peakHours: [8, 17, 18] },
-        { stationId: 'S003', date: '2023-10-27', revenue: 2800000, rentals: 38, utilization: 0.71, peakHours: [9, 12, 17] },
-        { stationId: 'S004', date: '2023-10-27', revenue: 3500000, rentals: 48, utilization: 0.79, peakHours: [17, 18, 20] },
-      ]);
+      const mockData: RentalHourDataPoint[] = [];
+      for (let hour = 0; hour < 24; hour++) {
+        mockData.push({ 
+          hour, 
+          rentalHours: Math.floor(Math.random() * 50),
+          bookingCount: Math.floor(Math.random() * 10) 
+        });
+      }
+      setReportData(mockData);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedDate(e.target.value);
+  };
+
+  const handleLoadData = () => {
+    loadStationReports();
   };
 
   if (isLoading) {
@@ -43,75 +62,73 @@ const StationReportTable: React.FC = () => {
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-500">Loading station reports...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-center">
-          <p className="text-red-500 mb-2">{error}</p>
-          <button 
-            onClick={loadStationReports}
-            className="text-blue-600 hover:text-blue-800 underline"
-          >
-            Try again
-          </button>
+          <p className="mt-2 text-gray-500">Loading rental hours data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-            <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station ID</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue (VND)</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Rentals</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utilization</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peak Hours</th>
-            </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-            {reportData.length === 0 ? (
-                <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                        No station reports found
-                    </td>
-                </tr>
-            ) : (
-                reportData.map((report) => (
-                <tr key={report.stationId}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{report.stationId}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{report.revenue.toLocaleString('vi-VN')}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{report.rentals}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center">
-                        <div className="w-24 bg-gray-200 rounded-full h-2.5 mr-2">
-                           <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${report.utilization * 100}%` }}></div>
-                        </div>
-                        {(report.utilization * 100).toFixed(0)}%
-                    </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex space-x-1">
-                        {report.peakHours.map(hour => (
-                            <span key={hour} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-md">{`${hour}:00`}</span>
-                        ))}
-                    </div>
-                </td>
-                </tr>
-                ))
-            )}
-            </tbody>
-        </table>
+    <div>
+      {error && (
+        <div className="mb-3 p-3 rounded border border-red-200 bg-red-50 text-red-700 flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={loadStationReports} className="text-sm underline">Thử lại</button>
+        </div>
+      )}
+
+      <div className="mb-4 flex gap-4 items-end">
+        <Input
+          label="Chọn ngày"
+          id="rental-date"
+          type="date"
+          value={selectedDate}
+          onChange={handleDateChange}
+        />
+        <button
+          onClick={handleLoadData}
+          className="h-10 px-4 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+        >
+          Tải dữ liệu
+        </button>
+      </div>
+
+      <div style={{ width: '100%', height: 400 }}>
+        <ResponsiveContainer>
+          <BarChart
+            data={reportData}
+            margin={{
+              top: 5,
+              right: 20,
+              left: 20,
+              bottom: 5,
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis 
+              dataKey="hour" 
+              tick={{ fontSize: 12 }} 
+              label={{ value: 'Giờ trong ngày', position: 'insideBottom', offset: -5 }}
+            />
+            <YAxis 
+              label={{ value: 'Số giờ thuê', angle: -90, position: 'insideLeft' }}
+            />
+            <Tooltip 
+              formatter={(value: number, name: string) => {
+                if (name === 'rentalHours') return [`${value.toFixed(1)} giờ`, 'Tổng giờ thuê'];
+                if (name === 'bookingCount') return [`${value} bookings`, 'Số lượng'];
+                return [value, name];
+              }}
+              labelFormatter={(hour: number) => `Giờ ${hour}:00`}
+            />
+            <Legend />
+            <Bar dataKey="rentalHours" fill="#3b82f6" name="Tổng giờ thuê" />
+            <Bar dataKey="bookingCount" fill="#10b981" name="Số lượng booking" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };
 
-export default StationReportTable;
+export default StationReport;

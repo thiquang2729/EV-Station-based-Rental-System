@@ -17,21 +17,16 @@ export async function getRevenue(req, res, next) {
 
 export async function getUtilization(req, res, next) {
   try {
-    const { stationId, from, to } = req.query;
-    // Use whitehouse for utilization data
-    const stats = await whitehouseRepo.getUtilizationFromWhitehouse(stationId, from, to);
+    const { stationId } = req.query;
+    // Use peak hours chart repo for today's peak hours
+    const peakHoursChartRepo = await import('../repositories/peak-hours-chart.repo.js');
     
-    // Frontend expects array format: [{ name: string, value: number }]
-    // Format: [{ name: 'In Use', value: percentage }, { name: 'Available', value: 100 - percentage }]
-    const utilizationPercentage = stats.utilization || 0;
-    const availablePercentage = Math.max(0, 100 - utilizationPercentage);
+    // Get peak hours for today
+    const peakHours = await peakHoursChartRepo.getPeakHoursForToday(stationId);
     
     res.json({
       success: true,
-      data: [
-        { name: 'In Use', value: Math.round(utilizationPercentage * 100) / 100 },
-        { name: 'Available', value: Math.round(availablePercentage * 100) / 100 }
-      ]
+      data: peakHours
     });
   } catch (err) { next(err); }
 }
@@ -39,8 +34,8 @@ export async function getUtilization(req, res, next) {
 export async function getRevenueDaily(req, res, next) {
   try {
     const { from, to } = req.query;
-    // Use whitehouse for revenue daily data
-    const result = await whitehouseRepo.getRevenueFromWhitehouse(null, from, to, 'day');
+    // Use revenue.repo for revenue daily data (query from fact_booking)
+    const result = await revenueRepo.getRevenueDaily(from, to);
     res.json({ success: true, data: result });
   } catch (err) { next(err); }
 }

@@ -1,13 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
-import type { UtilizationDataPoint } from '../types';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import type { PeakHourDataPoint } from '../types';
 import { getUtilizationData } from '../api/analyticsApi';
 
-const COLORS = ['#3b82f6', '#d1d5db'];
-
 const UtilizationChart: React.FC = () => {
-  const [data, setData] = useState<UtilizationDataPoint[]>([]);
+  const [data, setData] = useState<PeakHourDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,27 +18,22 @@ const UtilizationChart: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
-      // Get last 7 days
-      const to = new Date();
-      const from = new Date();
-      from.setDate(from.getDate() - 7);
+      // Get peak hours for today
+      const peakHours = await getUtilizationData();
       
-      const utilizationData = await getUtilizationData(
-        undefined, // stationId - get all stations
-        from.toISOString().split('T')[0],
-        to.toISOString().split('T')[0]
-      );
+      // Ensure all 24 hours are present, sorted by hour
+      const hourlyData = Array.from({ length: 24 }, (_, i) => {
+        const existing = peakHours.find(d => d.hour === i);
+        return existing || { hour: i, bookingCount: 0 };
+      });
       
-      setData(utilizationData);
+      setData(hourlyData);
     } catch (error) {
       console.error('Failed to load utilization data:', error);
       setError('Failed to load utilization data');
       
-      // Fallback to mock data
-      setData([
-        { name: 'In Use', value: 75 },
-        { name: 'Available', value: 25 },
-      ]);
+      // Fallback to mock data (all hours with 0 bookings)
+      setData(Array.from({ length: 24 }, (_, i) => ({ hour: i, bookingCount: 0 })));
     } finally {
       setIsLoading(false);
     }
@@ -74,35 +67,33 @@ const UtilizationChart: React.FC = () => {
   }
 
   return (
-    <div style={{ width: '100%', height: 300 }}>
+    <div style={{ width: '100%', height: 400 }}>
         <ResponsiveContainer>
-            <PieChart>
-                <Pie
+            <BarChart
                 data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={80}
-                fill="#8884d8"
-                paddingAngle={5}
-                dataKey="value"
-                >
-                {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-                </Pie>
-                 <text
-                    x="50%"
-                    y="50%"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    className="text-3xl font-bold fill-gray-700"
-                >
-                    {data.length > 0 ? `${data[0].value}%` : '0%'}
-                </text>
-                <Tooltip formatter={(value: number) => [`${value}%`, 'Utilization']}/>
+                margin={{
+                top: 5,
+                right: 20,
+                left: 20,
+                bottom: 5,
+                }}
+            >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                    dataKey="hour" 
+                    tick={{ fontSize: 12 }} 
+                    label={{ value: 'Giờ trong ngày', position: 'insideBottom', offset: -5 }}
+                />
+                <YAxis 
+                    label={{ value: 'Số lượng booking', angle: -90, position: 'insideLeft' }}
+                />
+                <Tooltip 
+                    formatter={(value: number) => [`${value} bookings`, 'Số lượng']}
+                    labelFormatter={(hour: number) => `Giờ ${hour}:00`}
+                />
                 <Legend />
-            </PieChart>
+                <Bar dataKey="bookingCount" fill="#3b82f6" name="Số lượng booking" />
+            </BarChart>
         </ResponsiveContainer>
     </div>
   );

@@ -47,6 +47,17 @@ export interface UtilizationDataPoint {
   value: number;
 }
 
+export interface PeakHourDataPoint {
+  hour: number;
+  bookingCount: number;
+}
+
+export interface RentalHourDataPoint {
+  hour: number;
+  rentalHours: number;
+  bookingCount: number;
+}
+
 export interface StationReport {
   stationId: string;
   date: string;
@@ -54,6 +65,17 @@ export interface StationReport {
   rentals: number;
   utilization: number;
   peakHours: number[];
+}
+
+export interface PeakHourDataPoint {
+  hour: number;
+  bookingCount: number;
+}
+
+export interface RentalHourDataPoint {
+  hour: number;
+  rentalHours: number;
+  bookingCount: number;
 }
 
 export interface Booking {
