@@ -51,8 +51,9 @@ services:
       TZ: Asia/Ho_Chi_Minh
       SERVICE_RENTAL_BASE_URL: http://rental-svc:8081
       SERVICE_PAYMENT_BASE_URL: http://payment-svc:8082
+      SERVICE_AUTH_BASE_URL: http://auth-backend:8000
       ENABLE_CRON: true
-      WHITEHOUSE_DATABASE_URL: mysql://nifi:nifi123@whitehouse-mysql:3306/whitehouse
+      WHITEHOUSE_DATABASE_URL: mysql://nifi:nifi123@whitehouse-mysql:3306/whitehouse?connection_limit=10&pool_timeout=20&connect_timeout=10
     depends_on:
       mysql:
         condition: service_healthy

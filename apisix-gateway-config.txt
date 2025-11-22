@@ -1301,6 +1301,18 @@ LƯU Ý QUAN TRỌNG:
     - Authentication: KHÔNG CẦN
     - Upstream: http://analytics-svc:8083/api/v1/health
 
+    GET    /api/v1/analytics/revenue-daily
+    - Authentication: KHÔNG CẦN (Public endpoint)
+    - Upstream: http://analytics-svc:8083/api/v1/analytics/revenue-daily
+    - Query params: from, to
+    - Mô tả: Doanh thu theo ngày (public)
+
+    GET    /api/v1/analytics/utilization
+    - Authentication: CẦN (Bearer Token hoặc Cookie)
+    - Upstream: http://analytics-svc:8083/api/v1/analytics/utilization
+    - Query params: stationId, from, to, granularity
+    - Mô tả: Phân tích mức độ sử dụng
+
     GET    /analytics/api/v1/analytics/revenue
     - Authentication: CẦN (Bearer Token)
     - Upstream: http://analytics-svc:8083/api/v1/analytics/revenue

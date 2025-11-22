@@ -1,73 +1,151 @@
-import prisma from '../dao/prisma.js';
+import { getWhitehousePrisma } from '../dao/whitehouse.prisma.js';
 
 export async function getRevenueByStation(stationId, from, to, granularity) {
-  const where = {
-    stationId,
-    status: 'SUCCEEDED',
-    createdAt: {
-      gte: new Date(from),
-      lte: new Date(to)
-    }
-  };
+  try {
+    const prisma = await getWhitehousePrisma();
+    
+    // Get time_ids for the date range
+    const timeRecords = await prisma.dimTime.findMany({
+      where: {
+        date: {
+          gte: new Date(from),
+          lte: new Date(to),
+        },
+      },
+    });
 
-  const groupBy = granularity === 'day' ? 'DATE(createdAt)' :
-                  granularity === 'week' ? 'YEARWEEK(createdAt)' :
-                  'YEAR(createdAt), MONTH(createdAt)';
+    const timeIds = timeRecords.map((t) => t.time_id);
 
-  const result = await prisma.$queryRaw`
-    SELECT 
-      ${granularity === 'day' ? 'DATE(createdAt) as period' :
-        granularity === 'week' ? 'YEARWEEK(createdAt) as period' :
-        'CONCAT(YEAR(createdAt), "-", LPAD(MONTH(createdAt), 2, "0")) as period'},
-      SUM(amount) as revenue,
-      COUNT(*) as transactionCount
-    FROM Payment 
-    WHERE stationId = ${stationId}
-      AND status = 'SUCCEEDED'
-      AND createdAt >= ${new Date(from)}
-      AND createdAt <= ${new Date(to)}
-    GROUP BY ${granularity === 'day' ? 'DATE(createdAt)' :
-               granularity === 'week' ? 'YEARWEEK(createdAt)' :
-               'YEAR(createdAt), MONTH(createdAt)'}
-    ORDER BY period
-  `;
+    // Query payments from whitehouse
+    const payments = await prisma.factPayment.findMany({
+      where: {
+        station_id: stationId,
+        status: 'SUCCEEDED',
+        time_id: {
+          in: timeIds,
+        },
+      },
+      include: {
+        time: true,
+      },
+    });
 
-  return result;
+    // Group by granularity
+    const grouped = {};
+    payments.forEach((payment) => {
+      let key;
+      if (granularity === 'day') {
+        key = payment.time.date.toISOString().split('T')[0];
+      } else if (granularity === 'week') {
+        key = `${payment.time.year}-W${String(payment.time.week).padStart(2, '0')}`;
+      } else {
+        key = `${payment.time.year}-${String(payment.time.month).padStart(2, '0')}`;
+      }
+
+      if (!grouped[key]) {
+        grouped[key] = { period: key, revenue: 0, transactionCount: 0 };
+      }
+      grouped[key].revenue += Number(payment.amount);
+      grouped[key].transactionCount += 1;
+    });
+
+    return Object.values(grouped).sort((a, b) => a.period.localeCompare(b.period));
+  } catch (error) {
+    console.error('Error getting revenue by station from whitehouse:', error.message);
+    return [];
+  }
 }
 
 export async function getUtilizationByStation(stationId, from, to) {
-  // Mock data - in real implementation, this would query rental data
-  const result = await prisma.$queryRaw`
-    SELECT 
-      stationId,
-      COUNT(DISTINCT bookingId) as totalRentals,
-      SUM(TIMESTAMPDIFF(HOUR, createdAt, updatedAt)) as totalRentalHours,
-      ${24 * Math.ceil((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24))} as totalAvailableHours
-    FROM Payment 
-    WHERE stationId = ${stationId}
-      AND status = 'SUCCEEDED'
-      AND createdAt >= ${new Date(from)}
-      AND createdAt <= ${new Date(to)}
-    GROUP BY stationId
-  `;
+  try {
+    const prisma = await getWhitehousePrisma();
+    
+    // Get time_ids for the date range
+    const timeRecords = await prisma.dimTime.findMany({
+      where: {
+        date: {
+          gte: new Date(from),
+          lte: new Date(to),
+        },
+      },
+    });
 
-  return result[0] || { stationId, totalRentals: 0, totalRentalHours: 0, totalAvailableHours: 0 };
+    const timeIds = timeRecords.map((t) => t.time_id);
+
+    // Query bookings from whitehouse
+    const bookings = await prisma.factBooking.findMany({
+      where: {
+        station_id: stationId,
+        status: 'COMPLETED',
+        time_id: {
+          in: timeIds,
+        },
+      },
+      include: {
+        time: true,
+      },
+    });
+
+    // Calculate total rental hours
+    let totalRentalHours = 0;
+    bookings.forEach((booking) => {
+      if (booking.end_time && booking.start_time) {
+        const hours = (new Date(booking.end_time) - new Date(booking.start_time)) / (1000 * 60 * 60);
+        totalRentalHours += hours;
+      } else if (booking.duration_hours) {
+        totalRentalHours += Number(booking.duration_hours);
+      }
+    });
+
+    // Calculate total available hours (24 hours * number of days)
+    const daysDiff = Math.ceil((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24));
+    const totalAvailableHours = 24 * daysDiff;
+
+    return {
+      stationId,
+      totalRentals: bookings.length,
+      totalRentalHours,
+      totalAvailableHours,
+    };
+  } catch (error) {
+    console.error('Error getting utilization by station from whitehouse:', error.message);
+    return { stationId, totalRentals: 0, totalRentalHours: 0, totalAvailableHours: 0 };
+  }
 }
 
 export async function getPeakHoursByStation(stationId, from, to) {
-  const result = await prisma.$queryRaw`
-    SELECT 
-      HOUR(createdAt) as hour,
-      COUNT(*) as transactionCount
-    FROM Payment 
-    WHERE stationId = ${stationId}
-      AND status = 'SUCCEEDED'
-      AND createdAt >= ${new Date(from)}
-      AND createdAt <= ${new Date(to)}
-    GROUP BY HOUR(createdAt)
-    ORDER BY transactionCount DESC
-    LIMIT 5
-  `;
+  try {
+    const prisma = await getWhitehousePrisma();
+    
+    // Get time_ids for the date range
+    const timeRecords = await prisma.dimTime.findMany({
+      where: {
+        date: {
+          gte: new Date(from),
+          lte: new Date(to),
+        },
+      },
+    });
 
-  return result.map(row => row.hour);
+    const timeIds = timeRecords.map((t) => t.time_id);
+
+    // Query peak hours from whitehouse
+    const peakHours = await prisma.factPeakHours.findMany({
+      where: {
+        station_id: stationId,
+        time_id: {
+          in: timeIds,
+        },
+      },
+      orderBy: {
+        peak_score: 'desc',
+      },
+      take: 5,
+    });
+
+    return peakHours.map((ph) => ph.hour_of_day);
+  } catch (error) {
+    console.error('Error getting peak hours by station from whitehouse:', error.message);
+    return [];
+  }
 }

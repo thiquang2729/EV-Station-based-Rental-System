@@ -4,11 +4,13 @@ import * as peakHoursService from '../services/peak-hours.service.js';
 import * as forecastService from '../services/forecast.service.js';
 import * as userStatsRepo from '../repositories/user-stats.repo.js';
 import * as revenueRepo from '../repositories/revenue.repo.js';
+import * as whitehouseRepo from '../repositories/whitehouse.repo.js';
 
 export async function getRevenue(req, res, next) {
   try {
     const { stationId, from, to, granularity } = req.query;
-    const result = await aggregatesService.getRevenueSeries(stationId, from, to, granularity);
+    // Use whitehouse for revenue data
+    const result = await whitehouseRepo.getRevenueFromWhitehouse(stationId, from, to, granularity || 'day');
     res.json(result);
   } catch (err) { next(err); }
 }
@@ -16,16 +18,30 @@ export async function getRevenue(req, res, next) {
 export async function getUtilization(req, res, next) {
   try {
     const { stationId, from, to } = req.query;
-    const result = await utilizationService.getUtilization(stationId, from, to);
-    res.json(result);
+    // Use whitehouse for utilization data
+    const stats = await whitehouseRepo.getUtilizationFromWhitehouse(stationId, from, to);
+    
+    // Frontend expects array format: [{ name: string, value: number }]
+    // Format: [{ name: 'In Use', value: percentage }, { name: 'Available', value: 100 - percentage }]
+    const utilizationPercentage = stats.utilization || 0;
+    const availablePercentage = Math.max(0, 100 - utilizationPercentage);
+    
+    res.json({
+      success: true,
+      data: [
+        { name: 'In Use', value: Math.round(utilizationPercentage * 100) / 100 },
+        { name: 'Available', value: Math.round(availablePercentage * 100) / 100 }
+      ]
+    });
   } catch (err) { next(err); }
 }
 
 export async function getRevenueDaily(req, res, next) {
   try {
     const { from, to } = req.query;
-    const rows = await revenueRepo.getRevenueDaily(from, to);
-    res.json({ success: true, data: rows });
+    // Use whitehouse for revenue daily data
+    const result = await whitehouseRepo.getRevenueFromWhitehouse(null, from, to, 'day');
+    res.json({ success: true, data: result });
   } catch (err) { next(err); }
 }
 

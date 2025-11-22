@@ -179,7 +179,7 @@ const POS: React.FC = () => {
   useEffect(() => {
     if (currentUser) {
       loadStations();
-      loadTransactions();
+    loadTransactions();
     }
   }, [currentUser]);
 

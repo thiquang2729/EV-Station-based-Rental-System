@@ -6,6 +6,7 @@ import prom from 'prom-client';
 import errorMiddleware from './middlewares/error.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import reportsRoutes from './routes/reports.routes.js';
+import whitehouseRoutes from './routes/whitehouse.routes.js';
 import { registerNightlyAggregateJob } from './jobs/nightly-aggregate.job.js';
 
 prom.collectDefaultMetrics();
@@ -26,6 +27,7 @@ app.get('/metrics', async (req,res)=>{
 
 app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/v1/reports', reportsRoutes);
+app.use('/api/v1/whitehouse', whitehouseRoutes);
 
 app.use(errorMiddleware);
 

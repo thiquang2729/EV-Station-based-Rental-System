@@ -1,6 +1,4 @@
-import mysql from 'mysql2/promise';
-
-let pool;
+import { getWhitehousePrisma } from '../dao/whitehouse.prisma.js';
 
 export const initWhitehouseConnection = async () => {
   if (!process.env.WHITEHOUSE_DATABASE_URL) {
@@ -8,26 +6,38 @@ export const initWhitehouseConnection = async () => {
     return;
   }
   try {
-    pool = mysql.createPool(process.env.WHITEHOUSE_DATABASE_URL);
-    await pool.query('SELECT 1');
-    console.log('Connected to Whitehouse Database');
+    // Test connection by querying dim_time table
+    const prisma = await getWhitehousePrisma();
+    await prisma.dimTime.findFirst({
+      take: 1,
+    });
+    console.log('Connected to Whitehouse Database via Prisma');
   } catch (error) {
     console.error('Failed to connect to Whitehouse Database:', error.message);
+    console.error('Error details:', error);
   }
 };
 
 export const getWhitehouseData = async (query, params = []) => {
-  if (!pool) throw new Error('Whitehouse DB not connected');
-  const [rows] = await pool.execute(query, params);
-  return rows;
+  // This is kept for backward compatibility
+  // New code should use whitehousePrisma directly
+  throw new Error('Use whitehousePrisma directly instead of getWhitehouseData');
 };
 
 export const getAggregatedStats = async () => {
-  // Example query - adjust based on actual schema
-  // Assuming a simple schema for now or just checking connection
   try {
-    const [rows] = await pool.query('SHOW TABLES');
-    return { tables: rows };
+    const prisma = await getWhitehousePrisma();
+    const timeCount = await prisma.dimTime.count();
+    const stationCount = await prisma.dimStation.count();
+    const bookingCount = await prisma.factBooking.count();
+    const paymentCount = await prisma.factPayment.count();
+    
+    return {
+      timeRecords: timeCount,
+      stations: stationCount,
+      bookings: bookingCount,
+      payments: paymentCount,
+    };
   } catch (e) {
     return { error: e.message };
   }

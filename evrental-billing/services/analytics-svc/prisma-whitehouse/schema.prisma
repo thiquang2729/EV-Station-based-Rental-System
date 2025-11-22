@@ -1,0 +1,194 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../generated/whitehouse-client"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("WHITEHOUSE_DATABASE_URL")
+}
+
+// Dimension Tables
+model DimTime {
+  time_id      Int      @id @default(autoincrement()) @map("time_id")
+  date         DateTime @unique @db.Date
+  year         Int
+  quarter      Int
+  month        Int
+  week         Int
+  day_of_month Int      @map("day_of_month")
+  day_of_week  Int      @map("day_of_week")
+  is_weekend   Boolean  @map("is_weekend")
+  created_at   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  fact_bookings   FactBooking[]
+  fact_payments   FactPayment[]
+  fact_peak_hours FactPeakHours[]
+  agg_daily_stats AggDailyStats[]
+
+  @@index([date])
+  @@index([year, month])
+  @@map("dim_time")
+}
+
+model DimStation {
+  station_id   String   @id @map("station_id") @db.VarChar(50)
+  station_name String   @map("station_name") @db.VarChar(255)
+  address      String?  @db.Text
+  lat          Decimal? @db.Decimal(10, 8)
+  lng          Decimal? @db.Decimal(11, 8)
+  created_at   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updated_at   DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  vehicles        DimVehicle[]
+  fact_bookings   FactBooking[]
+  fact_payments   FactPayment[]
+  fact_peak_hours FactPeakHours[]
+  agg_daily_stats AggDailyStats[]
+
+  @@index([station_name])
+  @@map("dim_station")
+}
+
+model DimUser {
+  user_id             String   @id @map("user_id") @db.VarChar(50)
+  email               String?  @db.VarChar(255)
+  full_name           String?  @map("full_name") @db.VarChar(255)
+  phone_number        String?  @map("phone_number") @db.VarChar(20)
+  role                String?  @db.VarChar(50)
+  verification_status String?  @map("verification_status") @db.VarChar(50)
+  created_at          DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updated_at          DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  fact_bookings FactBooking[]
+  fact_payments FactPayment[]
+
+  @@index([email])
+  @@index([role])
+  @@map("dim_user")
+}
+
+model DimVehicle {
+  vehicle_id    String   @id @map("vehicle_id") @db.VarChar(50)
+  vehicle_name  String?  @map("vehicle_name") @db.VarChar(255)
+  plate         String?  @unique @db.VarChar(50)
+  type          String?  @db.VarChar(50)
+  station_id    String?  @map("station_id") @db.VarChar(50)
+  price_per_day Int?     @map("price_per_day")
+  created_at    DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updated_at    DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  station       DimStation?   @relation(fields: [station_id], references: [station_id], onDelete: SetNull)
+  fact_bookings FactBooking[]
+
+  @@index([station_id])
+  @@index([type])
+  @@map("dim_vehicle")
+}
+
+// Fact Tables
+model FactBooking {
+  booking_id     String    @id @map("booking_id") @db.VarChar(50)
+  time_id        Int       @map("time_id")
+  user_id        String    @map("user_id") @db.VarChar(50)
+  station_id     String    @map("station_id") @db.VarChar(50)
+  vehicle_id     String    @map("vehicle_id") @db.VarChar(50)
+  start_time     DateTime  @map("start_time") @db.DateTime(0)
+  end_time       DateTime? @map("end_time") @db.DateTime(0)
+  status         String    @db.VarChar(50)
+  price_estimate Decimal?  @map("price_estimate") @db.Decimal(10, 2)
+  price_final    Decimal?  @map("price_final") @db.Decimal(10, 2)
+  payment_id     String?   @map("payment_id") @db.VarChar(50)
+  duration_hours Decimal?  @map("duration_hours") @db.Decimal(10, 2)
+  created_at     DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updated_at     DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  time    DimTime    @relation(fields: [time_id], references: [time_id])
+  user    DimUser    @relation(fields: [user_id], references: [user_id])
+  station DimStation @relation(fields: [station_id], references: [station_id])
+  vehicle DimVehicle @relation(fields: [vehicle_id], references: [vehicle_id])
+
+  @@index([time_id])
+  @@index([user_id])
+  @@index([station_id])
+  @@index([vehicle_id])
+  @@index([status])
+  @@index([start_time])
+  @@map("fact_booking")
+}
+
+model FactPayment {
+  payment_id     String   @id @map("payment_id") @db.VarChar(50)
+  time_id        Int      @map("time_id")
+  user_id        String?  @map("user_id") @db.VarChar(50)
+  station_id     String?  @map("station_id") @db.VarChar(50)
+  booking_id     String?  @map("booking_id") @db.VarChar(50)
+  amount         Decimal  @db.Decimal(10, 2)
+  status         String   @db.VarChar(50)
+  method         String?  @db.VarChar(50)
+  transaction_id String?  @map("transaction_id") @db.VarChar(255)
+  created_at     DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updated_at     DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  time    DimTime     @relation(fields: [time_id], references: [time_id])
+  user    DimUser?    @relation(fields: [user_id], references: [user_id], onDelete: SetNull)
+  station DimStation? @relation(fields: [station_id], references: [station_id], onDelete: SetNull)
+
+  @@index([time_id])
+  @@index([user_id])
+  @@index([station_id])
+  @@index([booking_id])
+  @@index([status])
+  @@index([created_at])
+  @@map("fact_payment")
+}
+
+model FactPeakHours {
+  peak_hour_id       BigInt   @id @default(autoincrement()) @map("peak_hour_id") @db.BigInt
+  time_id            Int      @map("time_id")
+  hour_of_day        Int      @map("hour_of_day")
+  station_id         String?  @map("station_id") @db.VarChar(50)
+  vehicle_type       String?  @map("vehicle_type") @db.VarChar(50)
+  total_bookings     Int      @default(0) @map("total_bookings")
+  total_revenue      Decimal  @default(0) @map("total_revenue") @db.Decimal(12, 2)
+  avg_duration_hours Decimal? @map("avg_duration_hours") @db.Decimal(10, 2)
+  unique_users       Int      @default(0) @map("unique_users")
+  peak_score         Decimal  @default(0) @map("peak_score") @db.Decimal(10, 2)
+  created_at         DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updated_at         DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  time    DimTime     @relation(fields: [time_id], references: [time_id])
+  station DimStation? @relation(fields: [station_id], references: [station_id], onDelete: SetNull)
+
+  @@unique([time_id, hour_of_day, station_id, vehicle_type])
+  @@index([hour_of_day])
+  @@index([time_id])
+  @@index([station_id])
+  @@index([peak_score(sort: Desc)])
+  @@map("fact_peak_hours")
+}
+
+model AggDailyStats {
+  stat_id                    BigInt   @id @default(autoincrement()) @map("stat_id") @db.BigInt
+  time_id                    Int      @map("time_id")
+  station_id                 String?  @map("station_id") @db.VarChar(50)
+  total_bookings             Int      @default(0) @map("total_bookings")
+  total_revenue              Decimal  @default(0) @map("total_revenue") @db.Decimal(12, 2)
+  total_payments             Int      @default(0) @map("total_payments")
+  completed_bookings         Int      @default(0) @map("completed_bookings")
+  cancelled_bookings         Int      @default(0) @map("cancelled_bookings")
+  avg_booking_duration_hours Decimal? @map("avg_booking_duration_hours") @db.Decimal(10, 2)
+  unique_users               Int      @default(0) @map("unique_users")
+  unique_vehicles            Int      @default(0) @map("unique_vehicles")
+  created_at                 DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updated_at                 DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  time    DimTime     @relation(fields: [time_id], references: [time_id])
+  station DimStation? @relation(fields: [station_id], references: [station_id], onDelete: SetNull)
+
+  @@unique([time_id, station_id])
+  @@index([time_id])
+  @@index([station_id])
+  @@map("agg_daily_stats")
+}
