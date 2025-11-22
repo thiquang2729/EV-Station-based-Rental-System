@@ -2,7 +2,7 @@
 
 ## Mô tả
 Hệ thống Cho thuê Trạm Sạc Xe Điện là ứng dụng dựa trên kiến trúc microservices được thiết kế để giúp người dùng quản lý trạm sạc xe điện, đặt chỗ, thanh toán và phân tích dữ liệu. Dự án này sử dụng Node.js/Express cho backend, React/Vite cho frontend, và cung cấp RESTful API để dễ dàng tích hợp với các dịch vụ khác nhau.
-![alt text](image.png)
+![alt text](image2.png)
 
 ## Tính năng chính
 - **Quản lý Người dùng**: Đăng ký, đăng nhập và quản lý hồ sơ người dùng với phân quyền theo vai trò (RENTER, STAFF, ADMIN)
