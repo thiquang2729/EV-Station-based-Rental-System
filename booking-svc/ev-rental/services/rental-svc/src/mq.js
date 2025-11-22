@@ -79,7 +79,7 @@ async function startConsumer() {
 module.exports = { startConsumer };
 
 
-async function publishPaymentIntentRequest({ bookingId, userId, stationId, amount }){
+async function publishPaymentIntentRequest({ bookingId, userId, stationId, stationName, amount }){
   const conn = await amqp.connect(RABBITMQ_URL);
   const ch = await conn.createChannel();
   await ch.assertExchange(EXCHANGE, 'topic', { durable: true });
@@ -87,6 +87,7 @@ async function publishPaymentIntentRequest({ bookingId, userId, stationId, amoun
     bookingId: String(bookingId),
     userId: userId ? String(userId) : 'unknown',
     stationId: stationId ? String(stationId) : null,
+    stationName: stationName ? String(stationName) : null,
     amount: Number(amount),
     method: 'VNPAY',
     type: 'RENTAL_FEE',

@@ -123,6 +123,7 @@ export default function CarDetails() {
         startTime: new Date(startMid).toISOString(),
         estDurationH: estDays * 24, // backend expects hours
         userId: 'dev-user',
+        ...(bookingForm.stationId && { stationId: String(bookingForm.stationId) }), // Thêm stationId nếu có
       };
       const res = await createBooking(payload);
       const data = res?.data ?? res;

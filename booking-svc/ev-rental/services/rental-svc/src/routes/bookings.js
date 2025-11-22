@@ -32,6 +32,7 @@ r.post('/', async (req, res) => {
   
   console.log('BODY DEBUG:', req.body);
   console.log('USER INFO:', { userId, user: req.user });
+  console.log('STATION ID DEBUG:', { stationIdInput, vehicleId });
 
   if (!vehicleId || !startTime) {
     return res.status(400).json({ error: 'vehicleId and startTime are required' });
@@ -43,15 +44,35 @@ r.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Vehicle not found' });
     }
 
-    if (stationIdInput && stationIdInput !== vehicle.stationId) {
-      return res.status(400).json({ error: 'Vehicle does not belong to provided stationId' });
+    // Cho phép nhận xe từ mọi trạm
+    // Nếu có stationIdInput, kiểm tra trạm có tồn tại không, rồi dùng nó
+    // Nếu không có stationIdInput, dùng trạm của xe
+    let stationId;
+    let stationName = null;
+    if (stationIdInput) {
+      // Kiểm tra trạm có tồn tại không
+      const station = await prisma.station.findUnique({ where: { id: stationIdInput } });
+      if (!station) {
+        return res.status(400).json({ error: 'Station not found' });
+      }
+      // Dùng stationId từ request (cho phép nhận xe từ mọi trạm)
+      stationId = stationIdInput;
+      stationName = station.name;
+      console.log('Using stationId from request (pickup station):', stationId, 'Station name:', stationName, 'Vehicle belongs to:', vehicle.stationId);
+    } else {
+      // Nếu không có stationIdInput, dùng trạm của xe
+      stationId = vehicle.stationId;
+      // Lấy tên trạm từ vehicle.station relation
+      const station = await prisma.station.findUnique({ where: { id: stationId } });
+      if (station) {
+        stationName = station.name;
+      }
+      console.log('Using stationId from vehicle (default):', stationId, 'Station name:', stationName);
     }
 
     if (!vehicle.isAvailable) {
       return res.status(400).json({ error: 'Vehicle is not available' });
     }
-
-    const stationId = vehicle.stationId;
     const start = new Date(startTime);
     const estimateH = Number(estDurationH || 1);
     const priceEstimate = (vehicle.pricePerDay || 0) * (estimateH / 24);
@@ -71,7 +92,13 @@ r.post('/', async (req, res) => {
     // KHÔNG khóa xe ở đây - chỉ khóa khi thanh toán thành công qua RabbitMQ
 
     // Gửi yêu cầu tạo ý định thanh toán sang payment-svc qua MQ (không chặn response)
-    publishPaymentIntentRequest({ bookingId: booking.id, userId, stationId, amount: priceEstimate })
+    publishPaymentIntentRequest({ 
+      bookingId: booking.id, 
+      userId, 
+      stationId, 
+      stationName: stationName || 'Unknown Station',
+      amount: priceEstimate 
+    })
       .catch((e) => console.error('publish intent request failed:', e.message));
 
     res.status(201).json(booking);

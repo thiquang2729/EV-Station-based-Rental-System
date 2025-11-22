@@ -50,18 +50,56 @@ r.post('/payments/intents', async (req, res, next) => {
       if (!amount) {
         return res.status(400).json({ success: false, message: 'amount required to create intent' });
       }
+      
+      // Lấy stationId và stationName từ RabbitMQ cache (IdempotencyKey) hoặc từ booking
+      let stationId = 'unknown';
+      let stationName = null;
+      try {
+        // Ưu tiên lấy từ RabbitMQ cache
+        const { PrismaClient } = await import('@prisma/client');
+        const prisma = new PrismaClient();
+        const cache = await prisma.idempotencyKey.findUnique({
+          where: { key: `booking_station_${bookingId}` }
+        });
+        
+        if (cache && cache.response && typeof cache.response === 'object' && cache.response.stationId) {
+          stationId = String(cache.response.stationId);
+          stationName = cache.response.stationName ? String(cache.response.stationName) : null;
+          console.log(`[PUBLIC] Got stationId ${stationId} and stationName ${stationName || 'N/A'} from RabbitMQ cache for booking ${bookingId}`);
+        } else {
+          // Fallback: Lấy từ booking service
+          const bookingResult = await rental.getBookingById(bookingId);
+          if (bookingResult.success && bookingResult.data?.stationId) {
+            stationId = String(bookingResult.data.stationId);
+            // Có thể lấy stationName từ booking nếu có relation
+            console.log(`[PUBLIC] Got stationId ${stationId} from booking service for booking ${bookingId}`);
+          } else {
+            console.log(`[PUBLIC] Could not get stationId from booking ${bookingId}, using 'unknown'`);
+          }
+        }
+        await prisma.$disconnect();
+      } catch (error) {
+        console.error(`[PUBLIC] Failed to get stationId for booking ${bookingId}:`, error.message);
+        console.log(`[PUBLIC] Using 'unknown' as stationId`);
+      }
+      
+      // Tạo description với tên trạm nếu có
+      const paymentDescription = stationName 
+        ? `${description || `EVR Payment ${bookingId}`} - Trạm: ${stationName}`
+        : (description || `EVR Payment ${bookingId}`);
+      
       // Tạo payment với phương thức CASH (tiền mặt) - status PENDING (chưa thanh toán)
       payment = await prepo.createPayment({
         bookingId,
         renterId: 'public',
-        stationId: 'unknown',
+        stationId,
         amount: Number(amount),
         method: PaymentMethod.CASH,
         type: PaymentType.RENTAL_FEE,
-        description: description || `EVR Payment ${bookingId}`,
+        description: paymentDescription,
         status: PaymentStatus.PENDING // Tạo với PENDING - chưa thanh toán, chưa khóa xe
       });
-      console.log(`[PUBLIC] Created new CASH payment ${payment.id} for booking ${bookingId}`);
+      console.log(`[PUBLIC] Created new CASH payment ${payment.id} for booking ${bookingId} with stationId ${stationId} and stationName ${stationName || 'N/A'}`);
     } else {
       console.log(`[PUBLIC] Using existing CASH payment ${payment.id} for booking ${bookingId}`);
     }

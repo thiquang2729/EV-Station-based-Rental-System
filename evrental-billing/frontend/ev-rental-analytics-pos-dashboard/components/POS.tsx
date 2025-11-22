@@ -119,6 +119,17 @@ const confirmPayment = async (paymentId: string): Promise<Payment> => {
 };
 
 
+// Helper function để extract station name từ description
+const extractStationName = (description: string, stationId: string): string => {
+  // Format: "EVR Payment {bookingId} - Trạm: {stationName}"
+  const match = description.match(/Trạm:\s*(.+?)(?:\s*$|$)/);
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+  // Nếu không tìm thấy trong description, trả về stationId
+  return stationId || 'Unknown';
+};
+
 const POS: React.FC = () => {
   const { currentUser } = useContext(AuthContext);
   const [transactions, setTransactions] = useState<Payment[]>([]);
@@ -131,13 +142,44 @@ const POS: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [confirmingPaymentId, setConfirmingPaymentId] = useState<string | null>(null);
+  const [stationsMap, setStationsMap] = useState<Record<string, string>>({});
 
   const stationId = "S001"; // Station ID để tạo payment mới (có thể lấy từ user context sau)
+
+  // Load stations list để map stationId sang stationName
+  const loadStations = async () => {
+    try {
+      const url = `${API_BASE_URL}/api/v1/stations`;
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const stations = Array.isArray(data) ? data : (data.data || []);
+        const map: Record<string, string> = {};
+        stations.forEach((station: any) => {
+          if (station.id && station.name) {
+            map[station.id] = station.name;
+          }
+        });
+        setStationsMap(map);
+      }
+    } catch (error) {
+      console.error('Failed to load stations:', error);
+      // Không throw error, chỉ log
+    }
+  };
 
   // Load transactions on component mount - chỉ khi có user
   useEffect(() => {
     if (currentUser) {
-    loadTransactions();
+      loadStations();
+      loadTransactions();
     }
   }, [currentUser]);
 
@@ -309,7 +351,11 @@ const POS: React.FC = () => {
                                         transactions.map((tx) => (
                                         <tr key={tx.id}>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{tx.bookingId}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-semibold">{tx.stationId || 'N/A'}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-semibold">
+                                              {extractStationName(tx.description || '', tx.stationId) !== tx.stationId 
+                                                ? extractStationName(tx.description || '', tx.stationId)
+                                                : (stationsMap[tx.stationId] || tx.stationId || 'Unknown')}
+                                            </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{tx.amount.toLocaleString('vi-VN')} VND</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{tx.method}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm">

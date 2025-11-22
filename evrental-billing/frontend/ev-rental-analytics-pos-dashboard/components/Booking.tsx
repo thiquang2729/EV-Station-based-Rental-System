@@ -74,7 +74,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ setCurrentPage }) => {
           if (prev <= 1) {
             clearInterval(timer);
             // Redirect về booking frontend my-bookings
-            window.location.href = 'http://localhost:3000/#/my-bookings';
+            window.location.href = 'http://localhost:3004/#/my-bookings';
             return 0;
           }
           return prev - 1;
@@ -141,7 +141,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ setCurrentPage }) => {
             </div>
                 )}
                 <Button 
-                    onClick={() => window.location.href = 'http://localhost:3000/#/my-bookings'} 
+                    onClick={() => window.location.href = 'http://localhost:3004/#/my-bookings'} 
                     className="w-full bg-green-600 hover:bg-green-700" 
                 >
                     Xem đơn thuê ngay
